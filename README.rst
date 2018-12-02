@@ -14,13 +14,21 @@ HydrOffice BAG Tools
     :target: https://www.hydroffice.org/manuals/bag/index.html
     :alt: Latest Documentation
 
-.. image:: https://ci.appveyor.com/api/projects/status/thng6eg4g05s8mi4?svg=true
-    :target: https://ci.appveyor.com/project/giumas/hyo2-bag
-    :alt: AppVeyor Status
-
 .. image:: https://travis-ci.org/hydroffice/hyo2_bag.svg?branch=master
     :target: https://travis-ci.org/hydroffice/hyo2_bag
     :alt: Travis-CI Status
+
+.. image:: https://ci.appveyor.com/api/projects/status/88t4ry78yqw5ejak?svg=true
+    :target: https://ci.appveyor.com/project/giumas/hyo2-bag
+    :alt: AppVeyor Status
+
+.. image:: https://api.codacy.com/project/badge/Grade/c7551d8f90ba4b0086c7b8dc81376260
+    :target: https://www.codacy.com/app/hydroffice/hyo2_bag/dashboard
+    :alt: codacy
+
+.. image:: https://coveralls.io/repos/github/hydroffice/hyo2_abc/badge.svg?branch=master
+    :target: https://coveralls.io/github/hydroffice/hyo2_bag?branch=master
+    :alt: coverall
 
 |
 
