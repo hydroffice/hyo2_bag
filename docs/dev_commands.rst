@@ -2,27 +2,6 @@ Development cheatsheet
 ======================
 
 
-Useful Mercurial commands
--------------------------
-
-Merge a branch to default
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* ``hg update default``
-* ``hg merge 2.0.0``
-* ``hg commit -m"Merged 2.0.0 branch with default" -ugiumas``
-* ``hg update 2.0.0``
-* ``hg commit -m"Close 2.0.0 branch" -ugiumas --close-branch``
-
-Open a new branch
-~~~~~~~~~~~~~~~~~
-
-* ``hg update default``
-* ``hg branch 2.0.1``
-* ``hg commit -m"Created 2.0.1 branch" -ugiumas``
-
-
-
 Useful git commands
 -------------------
 
@@ -86,5 +65,5 @@ PyPi
 Some instructions can be found `here <https://packaging.python.org/tutorials/packaging-projects/>`_:
 
 * ``python setup.py sdist bdist_wheel``
-* ``python -m pip install --user --upgrade twine``
-* ``python -m twine upload dist/*``
+* ``pip install twine``
+* ``twine upload dist/*``

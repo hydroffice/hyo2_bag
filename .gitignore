@@ -1,13 +1,27 @@
+syntax: glob
+
+# temp files
+*.sh~
+*.*~
+.DS_Store
+
+# Byte-compiled / optimized
+__pycache__/
+*.pyc
+*.pyo
+.cache/
+*.aux.xml
+
+# coverage files
+.coverage
+.coverage.*
+htmlcov/
+
+# google drive settings
 *desktop.ini
 
 # PyCharm settings
 .idea/
-
-# Byte-compiled / optimized 
-__pycache__/
-*.pyc
-*.pyo
-*.cache/
 
 # Microsoft installers
 *.msi
@@ -31,7 +45,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -47,4 +60,5 @@ docs/_build/*
 *.pyxbldc
 
 # notebooks checkpoint
-examples/.ipynb_checkpoints/
+*.ipynb_checkpoints
+

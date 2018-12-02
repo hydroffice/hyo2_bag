@@ -26,7 +26,7 @@ HydrOffice BAG Tools
     :target: https://www.codacy.com/app/hydroffice/hyo2_bag/dashboard
     :alt: codacy
 
-.. image:: https://coveralls.io/repos/github/hydroffice/hyo2_abc/badge.svg?branch=master
+.. image:: https://coveralls.io/repos/github/hydroffice/hyo2_bag/badge.svg?branch=master
     :target: https://coveralls.io/github/hydroffice/hyo2_bag?branch=master
     :alt: coverall
 
