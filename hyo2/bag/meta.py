@@ -310,20 +310,21 @@ class Meta:
     def _read_date(self):
         """ attempts to read the date string """
 
-        try:
-            ret = self.xml_tree.xpath('//*/gmd:CI_Date/gmd:date/gco:Date',
-                                      namespaces=self.ns)
-        except etree.Error as e:
-            logger.warning("unable to read the date string: %s" % e)
-            return
+        ret = self.xml_tree.xpath('//*/gmd:CI_Date/gmd:date/gco:Date',
+                                  namespaces=self.ns)
 
         if len(ret) == 0:
-            try:
-                ret = self.xml_tree.xpath('//*/smXML:CI_Date/date',
-                                          namespaces=self.ns2)
-            except etree.Error as e:
-                logger.warning("unable to read the date string: %s" % e)
-                return
+
+            ret = self.xml_tree.xpath('//*/smXML:CI_Date/date',
+                                      namespaces=self.ns2)
+
+        if len(ret) == 0:
+
+            ret = self.xml_tree.xpath('//*/gmd:dateStamp/gco:Date',
+                                              namespaces=self.ns)
+
+        if len(ret) == 0:
+            logger.warning("unable to read the date string")
 
         try:
             text_date = ret[0].text

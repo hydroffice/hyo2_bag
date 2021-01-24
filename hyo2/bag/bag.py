@@ -17,8 +17,8 @@ class BAGFile(File):
     """ Represents a BAG file. """
 
     _bag_root = "BAG_root"
-    _bag_version = "Bag Version"
-    _bag_version_number = b'1.5.3'
+    _bag_version_tag = "Bag Version"
+    _bag_version_number = b'1.6.3'
     _bag_elevation = "BAG_root/elevation"
     _bag_elevation_min_ev = "Minimum Elevation Value"
     _bag_elevation_max_ev = "Maximum Elevation Value"
@@ -63,7 +63,7 @@ class BAGFile(File):
         try:
             new_bag = File(name, 'w')
             new_bag.create_group(cls._bag_root)
-            new_bag.attrs.create(cls._bag_version, cls._bag_version_number, shape=(), dtype="S5")
+            new_bag.attrs.create(cls._bag_version_tag, cls._bag_version_number, shape=(), dtype="S5")
 
             elevation = new_bag.create_dataset(cls._bag_elevation, shape=(), dtype=np.float32)
             elevation.attrs.create(cls._bag_elevation_min_ev, 0.0, shape=(), dtype=np.float32)
@@ -82,6 +82,18 @@ class BAGFile(File):
             raise BAGError("Unable to create the BAG file %s: %s" % (name, e))
 
         return new_bag
+
+    def has_bag_root(self):
+        return self._bag_root in self
+
+    def has_bag_version(self):
+        return self._bag_version_tag in self[self._bag_root].attrs
+
+    def bag_version(self) -> str:
+        return self[self._bag_root].attrs[self._bag_version_tag]
+
+    def has_metadata(self):
+        return BAGFile._bag_metadata in self
 
     def has_elevation(self):
         return BAGFile._bag_elevation in self
@@ -207,6 +219,9 @@ class BAGFile(File):
     def density_shape(self):
         return self[BAGFile._bag_elevation_solution].shape
 
+    def has_tracking_list(self):
+        return BAGFile._bag_tracking_list in self
+
     def tracking_list(self):
         """ Return the tracking list as numpy array """
         return self[BAGFile._bag_tracking_list][:]
@@ -218,6 +233,22 @@ class BAGFile(File):
     def tracking_list_types(self):
         """ Return the tracking list field names """
         return self[BAGFile._bag_tracking_list].dtype
+
+    def has_valid_row_and_col_in_tracking_list(self):
+        rows, cols = self.elevation_shape()
+        # logger.info('rows: %s, cols: %s' % (rows, cols))
+
+        tl = self.tracking_list()
+        for idx, row in enumerate(tl['row']):
+            if row >= rows:
+                logger.warning("%d 'row' entry is invalid: %s" % (idx, row))
+                return False
+        for idx, col in enumerate(tl['col']):
+            if col >= cols:
+                logger.warning("%d 'col' entry is invalid: %s" % (idx, col))
+                return False
+
+        return True
 
     def metadata(self, as_string=True, as_pretty_xml=True):
         """ Return the metadata
