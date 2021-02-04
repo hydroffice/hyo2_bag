@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+from typing import Tuple
 
 import numpy as np
 import h5py
@@ -32,6 +33,7 @@ class BAGFile(File):
     _bag_uncertainty_min_uv = "Minimum Uncertainty Value"
     _bag_uncertainty_max_uv = "Maximum Uncertainty Value"
     _bag_elevation_solution = "BAG_root/elevation_solution"
+    _bag_varres_refinements = "BAG_root/varres_refinements"
 
     BAG_NAN = 1000000
 
@@ -55,6 +57,20 @@ class BAGFile(File):
         self.meta = None
         self.meta_errors = list()
         self._str = None
+
+    @classmethod
+    def is_bag(cls, bag_path:str, advanced: bool = False) -> bool:
+        if not advanced:
+            return os.path.splitext(bag_path)[-1].lower() == ".bag"
+
+        raise RuntimeError("Not implemented")
+
+    @classmethod
+    def is_vr(cls, bag_path: str, advanced: bool = False) -> bool:
+        if not advanced:
+            return BAGFile(bag_path).has_varres_refinements()
+
+        raise RuntimeError("Not implemented")
 
     @classmethod
     def create_template(cls, name):
@@ -132,6 +148,39 @@ class BAGFile(File):
     def elevation_shape(self):
         return self[BAGFile._bag_elevation].shape
 
+    def elevation_min_max(self) -> Tuple[float, float]:
+        rows, cols = self.elevation_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        mem_row = cols * 32 / 1024 / 1024
+        mem = mem_row * rows
+        # logger.debug('estimated memory: %.1f MB' % mem)
+        chunk_size = 8096
+        chunk_rows = int(chunk_size / mem_row) + 1
+        # logger.debug('nr of rows per chunk: %s' % chunk_rows)
+
+        elv_min = np.nan
+        elv_max = np.nan
+        for start in range(0, rows, chunk_rows):
+            stop = start + chunk_rows
+            if stop > rows:
+                stop = rows
+            # logger.debug('slice: %s-%s' % (start, stop))
+            _min = np.nanmin(self.elevation(row_range=slice(start, stop)))
+            if np.isnan(elv_min):
+                elv_min = _min
+            else:
+                if _min < elv_min:
+                    elv_min = _min
+            _max = np.nanmax(self.elevation(row_range=slice(start, stop)))
+            if np.isnan(elv_max):
+                elv_max = _max
+            else:
+                if _max > elv_max:
+                    elv_max = _max
+
+        return elv_min, elv_max
+
     def has_uncertainty(self):
         return BAGFile._bag_uncertainty in self
 
@@ -174,6 +223,39 @@ class BAGFile(File):
 
     def uncertainty_shape(self):
         return self[BAGFile._bag_uncertainty].shape
+
+    def uncertainty_min_max(self) -> Tuple[float, float]:
+        rows, cols = self.uncertainty_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        mem_row = cols * 32 / 1024 / 1024
+        mem = mem_row * rows
+        # logger.debug('estimated memory: %.1f MB' % mem)
+        chunk_size = 8096
+        chunk_rows = int(chunk_size / mem_row) + 1
+        # logger.debug('nr of rows per chunk: %s' % chunk_rows)
+
+        unc_min = np.nan
+        unc_max = np.nan
+        for start in range(0, rows, chunk_rows):
+            stop = start + chunk_rows
+            if stop > rows:
+                stop = rows
+            # logger.debug('slice: %s-%s' % (start, stop))
+            _min = np.nanmin(self.uncertainty(row_range=slice(start, stop)))
+            if np.isnan(unc_min):
+                unc_min = _min
+            else:
+                if _min < unc_min:
+                    unc_min = _min
+            _max = np.nanmax(self.uncertainty(row_range=slice(start, stop)))
+            if np.isnan(unc_max):
+                unc_max = _max
+            else:
+                if _max > unc_max:
+                    unc_max = _max
+
+        return unc_min, unc_max
 
     def has_density(self):
         try:
@@ -505,6 +587,9 @@ class BAGFile(File):
         ds = self.create_dataset(BAGFile._bag_metadata, shape=(len(new_xml),), dtype="S1")
         for i, x in enumerate(new_xml):
             ds[i] = bytes([x])
+
+    def has_varres_refinements(self):
+        return BAGFile._bag_varres_refinements in self
 
     def _str_group_info(self, grp):
         if grp == self._bag_root:
