@@ -3,6 +3,7 @@ import sys
 import logging
 import numpy as np
 import h5py
+import traceback
 from lxml import etree
 
 logger = logging.getLogger(__name__)
@@ -353,23 +354,26 @@ class Meta:
     def _read_survey_dates(self):
         """ attempts to read the survey date strings """
 
-        ret_begin = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                                        'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:beginPosition',
-                                        namespaces=self.ns)
-        ret_end = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                                      'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:endPosition',
-                                      namespaces=self.ns)
+        try:
+            ret_begin = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
+                                            'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:beginPosition',
+                                            namespaces=self.ns)
+            ret_end = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
+                                          'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:endPosition',
+                                          namespaces=self.ns)
 
-        if len(ret_begin) == 0:
-            ret_begin = self.xml_tree.xpath(
-                '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
-                'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/beginPosition',
-                namespaces=self.ns)
-        if len(ret_end) == 0:
-            ret_end = self.xml_tree.xpath(
-                '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
-                'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/endPosition',
-                namespaces=self.ns)
+            if len(ret_begin) == 0:
+                ret_begin = self.xml_tree.xpath(
+                    '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
+                    'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/beginPosition',
+                    namespaces=self.ns2)
+            if len(ret_end) == 0:
+                ret_end = self.xml_tree.xpath(
+                    '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
+                    'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/endPosition',
+                    namespaces=self.ns2)
+        except Exception as e:
+            traceback.print_exc()
 
         if len(ret_begin) == 0:
             logger.warning("unable to read the survey begin date string")
