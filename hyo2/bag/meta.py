@@ -65,6 +65,11 @@ class Meta:
         self.date = None
         self._read_date()
 
+        # survey dates
+        self.survey_start_date = None
+        self.survey_end_date = None
+        self._read_survey_dates()
+
         # uncertainty type
         self.unc_type = None
         self._read_uncertainty_type()
@@ -344,6 +349,74 @@ class Meta:
             self.date = text_date
         else:
             self.date = tm_date
+
+    def _read_survey_dates(self):
+        """ attempts to read the survey date strings """
+
+        ret_begin = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
+                                        'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:beginPosition',
+                                        namespaces=self.ns)
+        ret_end = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
+                                      'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:endPosition',
+                                      namespaces=self.ns)
+
+        if len(ret_begin) == 0:
+            ret_begin = self.xml_tree.xpath(
+                '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
+                'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/beginPosition',
+                namespaces=self.ns)
+        if len(ret_end) == 0:
+            ret_end = self.xml_tree.xpath(
+                '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
+                'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/endPosition',
+                namespaces=self.ns)
+
+        if len(ret_begin) == 0:
+            logger.warning("unable to read the survey begin date string")
+
+        if len(ret_end) == 0:
+            logger.warning("unable to read the survey end date string")
+
+        try:
+            text_begin_date = ret_begin[0].text
+        except (ValueError, IndexError) as e:
+            logger.warning("unable to read the survey begin date string: %s" % e)
+            return
+
+        try:
+            text_end_date = ret_end[0].text
+        except (ValueError, IndexError) as e:
+            logger.warning("unable to read the survey end date string: %s" % e)
+            return
+
+        tm_begin_date = None
+        tm_end_date = None
+        try:
+            import dateutil.parser
+            parsed_date = dateutil.parser.parse(text_begin_date)
+            tm_begin_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+        except Exception:
+            logger.warning("unable to handle the survey begin date string: %s" % text_begin_date)
+
+        try:
+            import dateutil.parser
+            parsed_date = dateutil.parser.parse(text_begin_date)
+            tm_end_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+        except Exception:
+            logger.warning("unable to handle the survey begin date string: %s" % text_begin_date)
+
+        if tm_begin_date is None:
+            self.survey_start_date = text_begin_date
+        else:
+            self.survey_start_date = tm_begin_date
+
+        if tm_end_date is None:
+            self.survey_end_date = text_end_date
+        else:
+            self.survey_end_date = tm_end_date
+
+        # logger.debug('start: %s' % self.survey_start_date)
+        # logger.debug('end: %s' % self.survey_end_date)
 
     def _read_uncertainty_type(self):
         """ attempts to read the uncertainty type """
