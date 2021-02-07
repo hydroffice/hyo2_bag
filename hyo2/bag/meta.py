@@ -49,6 +49,7 @@ class Meta:
 
         # corner wkt projection
         self.wkt_srs = None
+        self.xml_srs = None
         self._read_wkt_prj()
 
         # bbox
@@ -68,8 +69,9 @@ class Meta:
 
         # survey dates
         self.survey_start_date = None
+        self._read_survey_start_date()
         self.survey_end_date = None
-        self._read_survey_dates()
+        self._read_survey_end_date()
 
         # uncertainty type
         self.unc_type = None
@@ -224,6 +226,8 @@ class Meta:
 
             if len(ret) != 0:
                 logger.warning("unsupported method to describe CRS")
+                self.xml_srs = etree.tostring(ret[0], pretty_print=True)
+                # print(self.xml_srs)
                 return
 
         try:
@@ -351,35 +355,26 @@ class Meta:
         else:
             self.date = tm_date
 
-    def _read_survey_dates(self):
+    def _read_survey_start_date(self):
         """ attempts to read the survey date strings """
 
         try:
             ret_begin = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
                                             'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:beginPosition',
                                             namespaces=self.ns)
-            ret_end = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                                          'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:endPosition',
-                                          namespaces=self.ns)
 
             if len(ret_begin) == 0:
                 ret_begin = self.xml_tree.xpath(
                     '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
                     'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/beginPosition',
                     namespaces=self.ns2)
-            if len(ret_end) == 0:
-                ret_end = self.xml_tree.xpath(
-                    '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
-                    'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/endPosition',
-                    namespaces=self.ns2)
+
         except Exception as e:
             traceback.print_exc()
 
         if len(ret_begin) == 0:
             logger.warning("unable to read the survey begin date string")
-
-        if len(ret_end) == 0:
-            logger.warning("unable to read the survey end date string")
+            return
 
         try:
             text_begin_date = ret_begin[0].text
@@ -387,25 +382,11 @@ class Meta:
             logger.warning("unable to read the survey begin date string: %s" % e)
             return
 
-        try:
-            text_end_date = ret_end[0].text
-        except (ValueError, IndexError) as e:
-            logger.warning("unable to read the survey end date string: %s" % e)
-            return
-
         tm_begin_date = None
-        tm_end_date = None
         try:
             import dateutil.parser
             parsed_date = dateutil.parser.parse(text_begin_date)
             tm_begin_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
-        except Exception:
-            logger.warning("unable to handle the survey begin date string: %s" % text_begin_date)
-
-        try:
-            import dateutil.parser
-            parsed_date = dateutil.parser.parse(text_begin_date)
-            tm_end_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
         except Exception:
             logger.warning("unable to handle the survey begin date string: %s" % text_begin_date)
 
@@ -414,16 +395,52 @@ class Meta:
         else:
             self.survey_start_date = tm_begin_date
 
+        # logger.debug('start: %s' % self.survey_start_date)
+
+    def _read_survey_end_date(self):
+        """ attempts to read the survey date strings """
+
+        try:
+            ret_end = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
+                                          'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:endPosition',
+                                          namespaces=self.ns)
+
+            if len(ret_end) == 0:
+                ret_end = self.xml_tree.xpath(
+                    '//*/identificationInfo/smXML:BAG_DataIdentification/extent/smXML:EX_Extent/'
+                    'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/endPosition',
+                    namespaces=self.ns2)
+        except Exception as e:
+            traceback.print_exc()
+
+        if len(ret_end) == 0:
+            logger.warning("unable to read the survey end date string")
+            return
+
+        try:
+            text_end_date = ret_end[0].text
+        except (ValueError, IndexError) as e:
+            logger.warning("unable to read the survey end date string: %s" % e)
+            return
+
+        tm_end_date = None
+        try:
+            import dateutil.parser
+            parsed_date = dateutil.parser.parse(text_begin_date)
+            tm_end_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+        except Exception:
+            logger.warning("unable to handle the survey begin date string: %s" % text_begin_date)
+
         if tm_end_date is None:
             self.survey_end_date = text_end_date
         else:
             self.survey_end_date = tm_end_date
 
-        # logger.debug('start: %s' % self.survey_start_date)
         # logger.debug('end: %s' % self.survey_end_date)
 
     def _read_uncertainty_type(self):
         """ attempts to read the uncertainty type """
+        old_format = False
 
         try:
             ret = self.xml_tree.xpath('//*/bag:verticalUncertaintyType/bag:BAG_VertUncertCode/@codeListValue',
@@ -437,12 +454,16 @@ class Meta:
             try:
                 ret = self.xml_tree.xpath('//*/verticalUncertaintyType',
                                           namespaces=self.ns2)
+                old_format = True
             except etree.Error as e:
                 logger.warning("unable to read the uncertainty type string: %s" % e)
                 return
 
         try:
-            self.unc_type = ret[0]
+            if old_format:
+                self.unc_type = ret[0].text
+            else:
+                self.unc_type = ret[0]
         except (ValueError, IndexError) as e:
             logger.warning("unable to read the uncertainty type attribute: %s" % e)
             return
