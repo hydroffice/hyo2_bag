@@ -33,7 +33,10 @@ class BAGFile(File):
     _bag_uncertainty_min_uv = "Minimum Uncertainty Value"
     _bag_uncertainty_max_uv = "Maximum Uncertainty Value"
     _bag_elevation_solution = "BAG_root/elevation_solution"
+
+    _bag_varres_metadata = "BAG_root/varres_metadata"
     _bag_varres_refinements = "BAG_root/varres_refinements"
+    _bag_varres_tracking_list = "BAG_root/varres_tracking_list"
 
     BAG_NAN = 1000000
 
@@ -181,6 +184,21 @@ class BAGFile(File):
 
         return elv_min, elv_max
 
+    def vr_refinements_shape(self):
+        return self[BAGFile._bag_varres_refinements].shape
+
+    def vr_elevation_min_max(self) -> Tuple[float, float]:
+        rows, cols = self.vr_refinements_shape()
+        # logger.debug('refinements shape: %s, %s' % (rows, cols))
+
+        vr_el = self[BAGFile._bag_varres_refinements][0]['depth']
+        mask = vr_el == BAGFile.BAG_NAN
+        vr_el[mask] = np.nan
+
+        # logger.debug(vr_el)
+
+        return np.nanmin(vr_el), np.nanmax(vr_el)
+
     def has_uncertainty(self):
         return BAGFile._bag_uncertainty in self
 
@@ -256,6 +274,18 @@ class BAGFile(File):
                     unc_max = _max
 
         return unc_min, unc_max
+
+    def vr_uncertainty_min_max(self) -> Tuple[float, float]:
+        rows, cols = self.vr_refinements_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
+        mask = vr_unc == BAGFile.BAG_NAN
+        vr_unc[mask] = np.nan
+
+        # logger.debug(vr_el)
+
+        return np.nanmin(vr_unc), np.nanmax(vr_unc)
 
     def has_density(self):
         try:
@@ -588,8 +618,14 @@ class BAGFile(File):
         for i, x in enumerate(new_xml):
             ds[i] = bytes([x])
 
+    def has_varres_metadata(self):
+        return BAGFile._bag_varres_metadata in self
+
     def has_varres_refinements(self):
         return BAGFile._bag_varres_refinements in self
+
+    def has_varres_tracking_list(self):
+        return BAGFile._bag_varres_tracking_list in self
 
     def _str_group_info(self, grp):
         if grp == self._bag_root:

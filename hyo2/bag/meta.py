@@ -426,7 +426,7 @@ class Meta:
         tm_end_date = None
         try:
             import dateutil.parser
-            parsed_date = dateutil.parser.parse(text_begin_date)
+            parsed_date = dateutil.parser.parse(text_end_date)
             tm_end_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
         except Exception:
             logger.warning("unable to handle the survey begin date string: %s" % text_begin_date)
