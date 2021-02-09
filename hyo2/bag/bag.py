@@ -184,6 +184,10 @@ class BAGFile(File):
 
         return elv_min, elv_max
 
+    def depth_min_max(self) -> Tuple[float, float]:
+        elv_min, elv_max = self.elevation_min_max()
+        return -elv_max, -elv_min
+
     def vr_refinements_shape(self):
         return self[BAGFile._bag_varres_refinements].shape
 
@@ -198,6 +202,10 @@ class BAGFile(File):
         # logger.debug(vr_el)
 
         return np.nanmin(vr_el), np.nanmax(vr_el)
+
+    def vr_depth_min_max(self) -> Tuple[float, float]:
+        elv_min, elv_max = self.vr_elevation_min_max()
+        return -elv_max, -elv_min
 
     def has_uncertainty(self):
         return BAGFile._bag_uncertainty in self
@@ -346,7 +354,7 @@ class BAGFile(File):
         """ Return the tracking list field names """
         return self[BAGFile._bag_tracking_list].dtype
 
-    def has_valid_row_and_col_in_tracking_list(self):
+    def has_valid_row_in_tracking_list(self):
         rows, cols = self.elevation_shape()
         # logger.info('rows: %s, cols: %s' % (rows, cols))
 
@@ -355,6 +363,14 @@ class BAGFile(File):
             if row >= rows:
                 logger.warning("%d 'row' entry is invalid: %s" % (idx, row))
                 return False
+
+        return True
+    
+    def has_valid_col_in_tracking_list(self):
+        rows, cols = self.elevation_shape()
+        # logger.info('rows: %s, cols: %s' % (rows, cols))
+
+        tl = self.tracking_list()
         for idx, col in enumerate(tl['col']):
             if col >= cols:
                 logger.warning("%d 'col' entry is invalid: %s" % (idx, col))
