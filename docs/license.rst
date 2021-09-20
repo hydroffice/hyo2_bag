@@ -2,7 +2,7 @@ License
 =======
 
 Copyright Notice and License Terms for: hyo2.bag - BAG package for HydrOffice
-Copyright (c) 2017, University of New Hampshire, Center for Coastal and Ocean Mapping
+Copyright (c) 2021, University of New Hampshire, Center for Coastal and Ocean Mapping
 
 Released under a dual license:
 - Community license (under LGPL v3)

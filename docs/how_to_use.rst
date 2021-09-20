@@ -3,4 +3,4 @@ How to use
 
 For some examples on how to use the library:
 
-* `https://bitbucket.org/gmasetti/hyo_bag/src/tip/examples/ <https://bitbucket.org/gmasetti/hyo_bag/src/tip/examples/>`_
+* `https://github.com/hydroffice/hyo_bag/tree/master/examples <https://github.com/hydroffice/hyo_bag/tree/master/examples>`_

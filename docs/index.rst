@@ -11,14 +11,11 @@ Contents
    :maxdepth: 2
 
    in_brief
-   requirements
    license
    how_to_install
-   how_to_install_on_linux_mint
    how_to_use
    how_to_contribute
    how_to_release
-   dev_commands
 
 Indices and tables
 ==================

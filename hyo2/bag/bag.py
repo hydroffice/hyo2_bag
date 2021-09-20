@@ -1,17 +1,15 @@
 import os
-import sys
 import logging
 from typing import Tuple
 
 import numpy as np
-import h5py
 from lxml import etree
 
-logger = logging.getLogger(__name__)
+from base import is_bag, File
+from helper import BAGError, Helper
+from meta import Meta
 
-from .base import is_bag, File
-from .helper import BAGError, Helper
-from .meta import Meta
+logger = logging.getLogger(__name__)
 
 
 class BAGFile(File):
