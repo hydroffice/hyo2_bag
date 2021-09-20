@@ -5,9 +5,9 @@ from typing import Tuple
 import numpy as np
 from lxml import etree
 
-from base import is_bag, File
-from helper import BAGError, Helper
-from meta import Meta
+from hyo2.bag.base import is_bag, File
+from hyo2.bag.helper import BAGError, Helper
+from hyo2.bag.meta import Meta
 
 logger = logging.getLogger(__name__)
 

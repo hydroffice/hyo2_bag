@@ -36,6 +36,9 @@ PyPi
 
 Some instructions can be found `here <https://packaging.python.org/tutorials/packaging-projects/>`_:
 
-* ``python setup.py sdist bdist_wheel``
-* ``pip install twine``
-* ``twine upload dist/*``
+* ``pip install --upgrade build``
+* ``py -m build``
+* ``pip install --upgrade twine``
+* ``twine upload --repository pypi dist/*``
+
+Remember to set the API token in the `.pypirc` setup file.
