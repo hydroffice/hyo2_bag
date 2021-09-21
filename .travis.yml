@@ -38,7 +38,7 @@ install:
   - source activate test-environment
   - pip install PySide2
   - conda install -q numpy matplotlib-base h5py lxml gdal
-  - pip install PyYAML  
+  - pip install PyYAML
   - pip install coveralls
   - pip install .
   # - conda remove --force PyQt Qt sip
