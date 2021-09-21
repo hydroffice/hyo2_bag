@@ -1,18 +1,15 @@
 import os
 import logging
+from PySide2 import QtWidgets  # required by matplotlib
 from matplotlib import pyplot as plt
 
-logger = logging.getLogger()
-logger.setLevel(logging.NOTSET)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)  # change to WARNING to reduce verbosity, DEBUG for high verbosity
-ch_formatter = logging.Formatter('%(levelname)-9s %(name)s.%(funcName)s:%(lineno)d > %(message)s')
-ch.setFormatter(ch_formatter)
-logger.addHandler(ch)
-
-from hyo2.bag import BAGFile
-from hyo2.bag import BAGError
+from hyo2.abc.lib.logging import set_logging
+from hyo2.bag.bag import BAGFile
+from hyo2.bag.bag import BAGError
 from hyo2.bag.helper import Helper
+
+logger = logging.getLogger(__name__)
+set_logging(ns_list=['hyo2.bag'])
 
 # Example that use bag.BAGFile to:
 # - open a BAG file

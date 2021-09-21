@@ -1,14 +1,15 @@
 import os
 import logging
+import argparse
+
+from hyo2.abc.lib.logging import set_logging
+from hyo2.bag import __version__
+from hyo2.bag.bag import BAGFile, is_bag
+
+logger = logging.getLogger(__name__)
+
 
 def main():
-    logger = logging.getLogger()
-    logger.setLevel(logging.NOTSET)
-
-
-    import argparse
-    from hyo2.bag import BAGFile, is_bag, __version__
-
     app_name = "bag_bbox"
     app_info = "Extraction of bounding box from an OpenNS BAG file, using hyo2.bag r%s" % __version__
 
@@ -23,24 +24,19 @@ def main():
     args = parser.parse_args()
 
     if args.verbose:
-        print("> verbosity: ON")
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)  # change to WARNING to reduce verbosity, DEBUG for high verbosity
-        ch_formatter = logging.Formatter('%(levelname)-9s %(name)s.%(funcName)s:%(lineno)d > %(message)s')
-        ch.setFormatter(ch_formatter)
-        logger.addHandler(ch)
-
-    if args.verbose:
-        print("> input: %s" % args.bag_file)
+        set_logging(ns_list=['hyo2.bag'])
+        logger.debug("> verbosity: ON")
+        
+        logger.debug("> input: %s" % args.bag_file)
 
         if args.output:
             args.output = os.path.abspath(args.output)
-            print("> output: %s" % args.output)
+            logger.debug("> output: %s" % args.output)
         else:
             args.output = None
-            print("> output: [default]")
+            logger.debug("> output: [default]")
 
-        print("> format: %s" % args.format)
+        logger.debug("> format: %s" % args.format)
 
     if not os.path.exists(args.bag_file):
         parser.exit(1, "ERROR: the input valid does not exist: %s" % args.bag_file)
@@ -49,6 +45,7 @@ def main():
         parser.exit(1, "ERROR: the input valid does not seem a BAG file: %s" % args.bag_file)
 
     bf = BAGFile(args.bag_file)
+    bag_meta = None
     try:
         bag_meta = bf.populate_metadata()
     except Exception as e:
@@ -61,7 +58,8 @@ def main():
         parser.exit(1, "ERROR: issue in output creation: %s" % e)
 
     if args.verbose:
-        print("> DONE")
+        logger.debug("> DONE")
+
 
 if __name__ == "__main__":
     main()
