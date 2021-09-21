@@ -40,7 +40,7 @@ def is_bag(file_name):
 class File(h5py.File):
     """ Represents a BAG file (at low-level, thin wrapper around h5py). """
 
-    def __init__(self, name, mode=None, driver=None,
+    def __init__(self, name, mode: str = "r", driver=None,
                  libver=None, userblock_size=None, swmr=False, **kwds):
         """
         Create a new file object.

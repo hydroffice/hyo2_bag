@@ -6,13 +6,13 @@ os:
 
 env:
   - PYTHON_VERSION=3.6
-  - PYTHON_VERSION=3.7
+  - PYTHON_VERSION=3.8
 
 matrix:
   fast_finish: true
   allow_failures:
   - os: osx
-  - env: PYTHON_VERSION=3.7
+  - env: PYTHON_VERSION=3.8
 
 install:
   - "export DISPLAY=:99.0"

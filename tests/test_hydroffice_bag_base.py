@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from hyo2.bag.helper import Helper, BAGError
+from hyo2.bag.helper import Helper
 from hyo2.bag.base import is_bag, File
 
 
