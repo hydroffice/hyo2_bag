@@ -35,7 +35,7 @@ install:
 
   # Check that we have the expected version of Python
   - python --version
-
+  - pip install PyYAML
   - pip install coveralls
   - pip install PySide2
   - conda install -q numpy matplotlib-base h5py lxml cython gdal
