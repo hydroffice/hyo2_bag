@@ -47,10 +47,15 @@ class Meta:
         self.ne = None
         self._read_corners_sw_and_ne()
 
-        # corner wkt projection
+        # wkt projection
         self.wkt_srs = None
         self.xml_srs = None
         self._read_wkt_prj()
+
+        # wkt vertical datum
+        self.wkt_vertical_datum = None
+        self.xml_vertical_datum = None
+        self._read_wkt_vertical_datum()
 
         # bbox
         self.lon_min = None
@@ -235,6 +240,38 @@ class Meta:
 
         except (ValueError, IndexError) as e:
             logger.warning("unable to read the WKT projection string: %s" % e)
+            return
+
+    def _read_wkt_vertical_datum(self):
+        """ attempts to read the WKT vertical datum string """
+
+        try:
+            ret = self.xml_tree.xpath('//*/gmd:referenceSystemInfo/gmd:MD_ReferenceSystem/'
+                                      'gmd:referenceSystemIdentifier/gmd:RS_Identifier/gmd:code/gco:CharacterString',
+                                      namespaces=self.ns)
+        except etree.Error as e:
+            logger.warning("unable to read the WKT vertical datum string: %s" % e)
+            return
+
+        if len(ret) == 0:
+            try:
+                ret = self.xml_tree.xpath('//*/referenceSystemInfo/smXML:MD_CRS',
+                                          namespaces=self.ns2)
+            except etree.Error as e:
+                logger.warning("unable to read the WKT vertical datum string: %s" % e)
+                return
+
+            if len(ret) != 0:
+                logger.warning("unsupported method to describe Vertical Datum")
+                self.xml_vertical_datum = etree.tostring(ret[1], pretty_print=True)
+                # print(self.xml_vertical_datum)
+                return
+
+        try:
+            self.wkt_vertical_datum = ret[1].text
+
+        except (ValueError, IndexError) as e:
+            logger.warning("unable to read the WKT vertical datum string: %s" % e)
             return
 
     def _read_bbox(self):
