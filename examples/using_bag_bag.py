@@ -21,7 +21,7 @@ if os.path.exists(file_bag_0):
     logger.debug("- file_bag_0: %s" % file_bag_0)
 
 # - open a file
-bag_0 = BAGFile(file_bag_0)
+bag_0 = BAGFile(file_bag_0, mode='r')
 logger.debug("\n%s\n" % bag_0)
 
 # - get elevation shape
@@ -87,5 +87,7 @@ logger.debug("file_bag_2: %s" % file_bag_2)
 bag_2 = BAGFile.create_template(file_bag_2)
 bag_2.close()
 
+if os.path.exists(file_bag_0_xml):
+    os.remove(file_bag_0_xml)
 if os.path.exists(file_bag_2):
     os.remove(file_bag_2)

@@ -16,7 +16,7 @@ bag_file = os.path.join(Helper.samples_folder(), "bdb_01.bag")
 if os.path.exists(bag_file):
     logger.debug("- file_bag_0: %s" % bag_file)
 
-bag = BAGFile(bag_file)
+bag = BAGFile(bag_file, mode='r')
 
 bag_meta = bag.populate_metadata()
 logger.debug(bag_meta)
@@ -24,7 +24,7 @@ logger.debug(bag_meta)
 logger.debug("has elevation? %s" % bag.has_elevation())
 
 bag_elevation = bag.elevation(mask_nan=False)
-logger.debug(type(bag.elevation()), bag.elevation().shape, bag.elevation().dtype)
+logger.debug("%s: %s: %s" % (type(bag.elevation()), bag.elevation().shape, bag.elevation().dtype))
 
 Elevation2Gdal(bag_elevation=bag_elevation, bag_meta=bag_meta, fmt="ascii")
 Elevation2Gdal(bag_elevation=bag_elevation, bag_meta=bag_meta, fmt="geotiff")

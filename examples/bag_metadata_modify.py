@@ -19,7 +19,7 @@ logger.debug("- file_bag_0: %s" % file_bag_0)
 file_bag_copy = os.path.join(os.path.dirname(__file__), "tmp_copy.bag")
 bag_copy = copyfile(file_bag_0, file_bag_copy)
 
-bag_0 = BAGFile(file_bag_copy)
+bag_0 = BAGFile(file_bag_copy, mode='r+')
 logger.debug(bag_0)
 
 logger.debug(type(bag_0.elevation(mask_nan=True)))

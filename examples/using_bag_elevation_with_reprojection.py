@@ -14,7 +14,7 @@ bag_file = os.path.join(Helper.samples_folder(), "bdb_01.bag")
 if os.path.exists(bag_file):
     logger.debug("- file_bag_0: %s" % bag_file)
 
-bag = BAGFile(bag_file)
+bag = BAGFile(bag_file, mode='r')
 
 bag_meta = bag.populate_metadata()
 logger.debug(bag_meta)

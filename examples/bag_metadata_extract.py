@@ -13,11 +13,11 @@ file_bag_0 = os.path.join(Helper.samples_folder(), "bdb_01.bag")
 if os.path.exists(file_bag_0):
     logger.debug("- file_bag_0: %s" % file_bag_0)
 
-bag_0 = BAGFile(file_bag_0)
+bag_0 = BAGFile(file_bag_0, mode="r")
 logger.debug(bag_0)
 
 meta = Meta(bag_0.metadata())
 
 output_xml = "original_metadata.xml"
 bag_0.extract_metadata(output_xml)
-os.remove(output_xml)
+# os.remove(output_xml)

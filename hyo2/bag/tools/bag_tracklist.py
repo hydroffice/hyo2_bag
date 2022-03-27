@@ -46,7 +46,7 @@ def main():
     if not is_bag(args.bag_file):
         parser.exit(1, "ERROR: the input valid does not seem a BAG file: %s" % args.bag_file)
 
-    bf = BAGFile(args.bag_file)
+    bf = BAGFile(args.bag_file, mode='r')
     tl = None
     try:
         tl = bf.tracking_list()

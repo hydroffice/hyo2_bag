@@ -440,9 +440,9 @@ class BAGFile(File):
 
         del self[BAGFile._bag_metadata]
         xml_sz = len(xml_string)
-        self.create_dataset(self._bag_metadata, (xml_sz, ), dtype="S1")
+        ds = self.create_dataset(self._bag_metadata, (xml_sz, ), dtype="S1")
         for i, bt in enumerate(xml_string):
-            self[BAGFile._bag_metadata][i] = bt
+            ds[i] = bytes([bt])
 
     def validate_metadata(self, xml_string=None):
         """ Validate metadata based on XML Schemas and schematron. """
