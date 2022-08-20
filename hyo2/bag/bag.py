@@ -40,7 +40,7 @@ class BAGFile(File):
 
     default_metadata_file = "BAG_metadata.xml"
 
-    def __init__(self, name, mode=None, driver=None,
+    def __init__(self, name, mode='r', driver=None,
                  libver=None, userblock_size=None, swmr=False, **kwds):
         """
         Create a new file object.
@@ -560,7 +560,7 @@ class BAGFile(File):
             'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         }
 
-        print(self[BAGFile._bag_metadata][:])
+        # print(self[BAGFile._bag_metadata][:])
         xml_tree = etree.fromstring(self[BAGFile._bag_metadata][:].tostring())
 
         try:
