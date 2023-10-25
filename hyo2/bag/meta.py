@@ -82,6 +82,10 @@ class Meta:
         self.unc_type = None
         self._read_uncertainty_type()
 
+        # uncertainty type
+        self.sec_constr = None
+        self._read_security_contraints()
+
     def __str__(self):
         output = "<metadata>"
 
@@ -111,6 +115,9 @@ class Meta:
 
         if self.unc_type is not None:
             output += "\n    <uncertainty type=%s>" % self.unc_type
+
+        if self.sec_constr is not None:
+            output += "\n    <security constraints=%s>" % self.sec_constr
 
         return output
 
@@ -263,7 +270,7 @@ class Meta:
 
             if len(ret) != 0:
                 logger.warning("unsupported method to describe Vertical Datum")
-                self.xml_vertical_datum = etree.tostring(ret[1], pretty_print=True)
+                self.xml_vertical_datum = etree.tostring(ret[0], pretty_print=True)
                 # print(self.xml_vertical_datum)
                 return
 
@@ -407,7 +414,8 @@ class Meta:
                     namespaces=self.ns2)
 
         except Exception as e:
-            traceback.print_exc()
+            logger.warning(e, exc_info=True)
+            return
 
         if len(ret_begin) == 0:
             logger.warning("unable to read the survey begin date string")
@@ -448,7 +456,8 @@ class Meta:
                     'temporalElement/smXML:EX_TemporalExtent/extent/TimePeriod/endPosition',
                     namespaces=self.ns2)
         except Exception as e:
-            traceback.print_exc()
+            logger.warning(e, exc_info=True)
+            return
 
         if len(ret_end) == 0:
             logger.warning("unable to read the survey end date string")
@@ -466,7 +475,7 @@ class Meta:
             parsed_date = dateutil.parser.parse(text_end_date)
             tm_end_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
         except Exception:
-            logger.warning("unable to handle the survey begin date string: %s" % text_begin_date)
+            logger.warning("unable to handle the survey end date string: %s" % text_end_date)
 
         if tm_end_date is None:
             self.survey_end_date = text_end_date
@@ -501,6 +510,37 @@ class Meta:
                 self.unc_type = ret[0].text
             else:
                 self.unc_type = ret[0]
+        except (ValueError, IndexError) as e:
+            logger.warning("unable to read the uncertainty type attribute: %s" % e)
+            return
+
+    def _read_security_contraints(self):
+        """ attempts to read the uncertainty type """
+        old_format = False
+
+        try:
+            ret = self.xml_tree.xpath(
+                '//*/gmd:MD_SecurityConstraints/gmd:classification/gmd:MD_ClassificationCode/@codeListValue',
+                namespaces=self.ns)
+        except etree.Error as e:
+            logger.warning("unable to read the uncertainty type string: %s" % e)
+            return
+
+        if len(ret) == 0:
+
+            try:
+                ret = self.xml_tree.xpath('//*/smXML:MD_SecurityConstraints/classification',
+                                          namespaces=self.ns2)
+                old_format = True
+            except etree.Error as e:
+                logger.warning("unable to read the uncertainty type string: %s" % e)
+                return
+
+        try:
+            if old_format:
+                self.sec_constr = ret[0].text
+            else:
+                self.sec_constr = ret[0]
         except (ValueError, IndexError) as e:
             logger.warning("unable to read the uncertainty type attribute: %s" % e)
             return
