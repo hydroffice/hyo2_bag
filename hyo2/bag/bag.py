@@ -382,23 +382,20 @@ class BAGFile(File):
         as_string
             If True, convert the metadata from a dataset of characters to a string
         as_pretty_xml
-            If True, return the xml in a pretty format
+            If True, return the xml in a pretty format as bytes
         """
-        if as_string and not as_pretty_xml:
-            try:
-                return self[BAGFile._bag_metadata][:].tostring()
-            except RuntimeError as e:
-                logger.info("exception raised: %s" % e)
-                return None
-        if as_pretty_xml:
-            try:
-                xml_tree = etree.fromstring(self[BAGFile._bag_metadata][:].tostring())
-                return etree.tostring(xml_tree, pretty_print=True)
-            except RuntimeError as e:
-                logger.info("exception raised: %s" % e)
-                return None
+        xml_bytes = self[BAGFile._bag_metadata][:].tostring().strip(b'\x00')
 
-        return self[BAGFile._bag_metadata][:]
+        if as_pretty_xml:
+            xml_tree = etree.fromstring(xml_bytes)
+            pretty_bytes = etree.tostring(xml_tree, pretty_print=True)
+            if as_string:
+                return pretty_bytes.decode()
+            return pretty_bytes
+        else:
+            if as_string:
+                return xml_bytes.decode()
+            return xml_bytes
 
     def extract_metadata(self, name=None):
         """ Save metadata on disk

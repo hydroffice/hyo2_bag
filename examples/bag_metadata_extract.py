@@ -9,7 +9,8 @@ from hyo2.bag.meta import Meta
 set_logging(ns_list=['hyo2.bag'])
 logger = logging.getLogger(__name__)
 
-file_bag_0 = os.path.join(Helper.samples_folder(), "bdb_01.bag")
+# file_bag_0 = os.path.join(Helper.samples_folder(), "bdb_01.bag")
+file_bag_0 = r"C:\Users\gmasetti\Desktop\H13405S_MB_8m_MLLW_1of2_edited.bag"
 if os.path.exists(file_bag_0):
     logger.debug("- file_bag_0: %s" % file_bag_0)
 
