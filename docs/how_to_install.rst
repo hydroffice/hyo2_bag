@@ -6,7 +6,7 @@ General approach
 
 * the simplest way: ``pip install hyo2.bag``
 
-* for the latest features: ``git clone ssh://git@github.com:hydroffice/hyo_bag.git``
+* for the latest features: ``git clone ssh://git@github.com:hydroffice/hyo2_bag.git``
 
 
 On Linux Mint
@@ -48,4 +48,4 @@ Test:
 .. NOTE::
    If you get issues on the installation, you may open a ticket:
 
-   * https://github.com/hydroffice/hyo_bag/issues
+   * https://github.com/hydroffice/hyo2_bag/issues
