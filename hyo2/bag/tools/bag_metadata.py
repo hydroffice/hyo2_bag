@@ -2,7 +2,7 @@ import os
 import logging
 import argparse
 
-from hyo2.abc.lib.logging import set_logging
+from hyo2.abc2.lib.logging import set_logging
 from hyo2.bag import __version__
 from hyo2.bag.bag import BAGFile, is_bag
 

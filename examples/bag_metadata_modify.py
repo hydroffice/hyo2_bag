@@ -4,7 +4,7 @@ from shutil import copyfile
 from PySide2 import QtWidgets  # required by matplotib
 from matplotlib import pyplot as plt
 
-from hyo2.abc.lib.logging import set_logging
+from hyo2.abc2.lib.logging import set_logging
 from hyo2.bag.bag import BAGFile
 from hyo2.bag.helper import Helper
 

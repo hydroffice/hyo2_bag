@@ -2,7 +2,7 @@ import os
 import logging
 from shutil import copyfile
 
-from hyo2.abc.lib.logging import set_logging
+from hyo2.abc2.lib.logging import set_logging
 from hyo2.bag.bag import BAGFile
 from hyo2.bag.helper import Helper
 from hyo2.bag.meta import Meta

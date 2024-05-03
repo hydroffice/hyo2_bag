@@ -65,7 +65,7 @@ setup(
         "wheel",
     ],
     install_requires=[
-        "hyo2.abc",
+        "hyo2.abc2",
         "lxml",
         "numpy",
         "gdal",

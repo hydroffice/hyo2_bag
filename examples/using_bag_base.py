@@ -1,7 +1,7 @@
 import os
 import logging
 
-from hyo2.abc.lib.logging import set_logging
+from hyo2.abc2.lib.logging import set_logging
 from hyo2.bag.base import is_bag, File
 from hyo2.bag.helper import Helper
 
