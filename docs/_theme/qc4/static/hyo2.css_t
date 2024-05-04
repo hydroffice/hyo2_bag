@@ -2,8 +2,8 @@
  * hyo2.css_t
  */
 
-{% set light_noaa = '#007ec6' %}
-{% set dark_hydroffice = '#235b8c' %}
+{% set light_noaa = '#c66300' %}
+{% set dark_hydroffice = '#C49B00' %}
 {% set dark_blue = '#164670' %}
 {% set blue = '#235b8c' %}
 {% set light_blue = '#368dd9' %}
@@ -13,7 +13,7 @@
 {% set very_light_orange = '#e5dfd5' %}
 {% set black = '#1a2126' %}
 {% set light_black = '#3e4549' %}
-{% set very_light_black = '#cccdce' %}
+{% set very_light_black = '#b6b7b8' %}
 {% set page_width = 965 %}
 {% set sidebar_width = 165 %}
 {% set body_font_stack = 'Optima, Segoe, "Segoe UI", Candara, Calibri, Arial, sans-serif' %}
@@ -227,7 +227,7 @@ div.body p, div.body dd, div.body li {
 }
 
 div.admonition {
-    background: #fafafa;
+    background: #FDFDF0;
     margin: 20px -30px;
     padding: 10px 30px;
     border-top: 1px solid #ccc;

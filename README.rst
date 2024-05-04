@@ -10,17 +10,17 @@ HydrOffice BAG Tools
     :target: https://pypi.python.org/pypi/hyo2.bag
     :alt: PyPi version
 
+.. image:: https://github.com/hydroffice/hyo2_bag/actions/workflows/bag_on_windows.yml/badge.svg
+    :target: https://github.com/hydroffice/hyo2_bag/actions/workflows/bag_on_windows.yml
+    :alt: Windows
+
+.. image:: https://github.com/hydroffice/hyo2_bag/actions/workflows/bag_on_linux.yml/badge.svg
+    :target: https://github.com/hydroffice/hyo2_bag/actions/workflows/bag_on_linux.yml
+    :alt: Linux
+
 .. image:: https://img.shields.io/badge/docs-latest-brightgreen.svg
     :target: https://www.hydroffice.org/manuals/bag/index.html
     :alt: Latest Documentation
-
-.. image:: https://travis-ci.org/hydroffice/hyo2_bag.svg?branch=master
-    :target: https://travis-ci.org/hydroffice/hyo2_bag
-    :alt: Travis-CI Status
-
-.. image:: https://ci.appveyor.com/api/projects/status/88t4ry78yqw5ejak?svg=true
-    :target: https://ci.appveyor.com/project/giumas/hyo2-bag
-    :alt: AppVeyor Status
 
 .. image:: https://api.codacy.com/project/badge/Grade/c7551d8f90ba4b0086c7b8dc81376260
     :target: https://www.codacy.com/app/hydroffice/hyo2_bag/dashboard
