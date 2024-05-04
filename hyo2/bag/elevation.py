@@ -1,15 +1,15 @@
 import os
 import logging
 
-log = logging.getLogger(__name__)
-
 import numpy as np
-
 from osgeo import gdal, osr
-from .meta import Meta
-from .helper import BAGError
-from .bag import BAGFile
 
+from hyo2.bag.meta import Meta
+from hyo2.bag.helper import BAGError
+from hyo2.bag.bag import BAGFile
+
+
+logger = logging.getLogger(__name__)
 gdal.UseExceptions()
 
 
@@ -21,10 +21,8 @@ class Elevation2Gdal:
         'xyz': ["XYZ", "bag.elevation.xyz"],
     }
 
-    def __init__(self, bag_elevation, bag_meta, fmt="geotiff", out_file=None, epsg=None):
+    def __init__(self, bag_elevation: np.ndarray, bag_meta: Meta, fmt="geotiff", out_file=None, epsg=None):
         """Export the elevation layer in one of the listed formats"""
-        assert isinstance(bag_elevation, np.ndarray)
-        assert isinstance(bag_meta, Meta)
         self.bag_elv = bag_elevation
         self.bag_meta = bag_meta
 
@@ -32,18 +30,18 @@ class Elevation2Gdal:
         self.mem = gdal.GetDriverByName("MEM")
         if self.mem is None:
             raise BAGError("%s driver not available.\n" % self.formats[fmt][0])
-        log.debug("format: %s" % fmt)
+        logger.debug("format: %s" % fmt)
 
         # set the output file
         self.out_file = out_file
         if self.out_file is None:
             self.out_file = os.path.abspath(self.formats[fmt][1])
-            log.debug("output: %s" % self.out_file)
+            logger.debug("output: %s" % self.out_file)
 
         if os.path.exists(self.out_file):
             os.remove(self.out_file)
 
-        log.debug("dtype: %s" % self.bag_elv.dtype)
+        logger.debug("dtype: %s" % self.bag_elv.dtype)
         self.rst = self.mem.Create(utf8_path=self.out_file, xsize=self.bag_meta.cols, ysize=self.bag_meta.rows,
                                    bands=1, eType=gdal.GDT_Float32)
         # GDAL geo-transform refers to the top left corner of the top left pixel of the raster.
@@ -57,7 +55,7 @@ class Elevation2Gdal:
         if self.bag_meta.wkt_srs is not None:
             self.srs.ImportFromWkt(self.bag_meta.wkt_srs)
         else:
-            log.warning("unable to recover valid spatial reference info")
+            logger.warning("unable to recover valid spatial reference info")
         self.rst.SetProjection(self.srs.ExportToWkt())
         self.bnd.FlushCache()
 
@@ -67,8 +65,8 @@ class Elevation2Gdal:
         # check if re-projection is required
         if not epsg:
             # if not, we just create a copy in the selected format
-            dst_ds = self.drv.CreateCopy(self.out_file, self.rst)
-            dst_ds = None
+            _ = self.drv.CreateCopy(self.out_file, self.rst)
+            _ = None
             self.rst = None
             return
 
@@ -86,7 +84,6 @@ class Elevation2Gdal:
                                           0.125  # error threshold --> use same value as in gdalwarp
                                           )
         # Create the final warped raster
-        dst_ds = self.drv.CreateCopy(self.out_file, tmp_ds)
-        dst_ds = None
+        _ = self.drv.CreateCopy(self.out_file, tmp_ds)
+        _ = None
         self.rst = None
-

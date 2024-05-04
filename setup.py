@@ -66,6 +66,7 @@ setup(
     ],
     install_requires=[
         "hyo2.abc2>=2.3.7",
+        "dateutil",
         "lxml",
         "numpy",
         "gdal",

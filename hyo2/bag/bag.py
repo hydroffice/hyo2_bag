@@ -60,7 +60,7 @@ class BAGFile(File):
         self._str = None
 
     @classmethod
-    def is_bag(cls, bag_path:str, advanced: bool = False) -> bool:
+    def is_bag(cls, bag_path: str, advanced: bool = False) -> bool:
         if not advanced:
             return os.path.splitext(bag_path)[-1].lower() == ".bag"
 
@@ -154,7 +154,7 @@ class BAGFile(File):
         # logger.debug('shape: %s, %s' % (rows, cols))
 
         mem_row = cols * 32 / 1024 / 1024
-        mem = mem_row * rows
+        # mem = mem_row * rows
         # logger.debug('estimated memory: %.1f MB' % mem)
         chunk_size = 8096
         chunk_rows = int(chunk_size / mem_row) + 1
@@ -190,7 +190,7 @@ class BAGFile(File):
         return self[BAGFile._bag_varres_refinements].shape
 
     def vr_elevation_min_max(self) -> Tuple[float, float]:
-        rows, cols = self.vr_refinements_shape()
+        # rows, cols = self.vr_refinements_shape()
         # logger.debug('refinements shape: %s, %s' % (rows, cols))
 
         vr_el = self[BAGFile._bag_varres_refinements][0]['depth']
@@ -253,7 +253,7 @@ class BAGFile(File):
         # logger.debug('shape: %s, %s' % (rows, cols))
 
         mem_row = cols * 32 / 1024 / 1024
-        mem = mem_row * rows
+        # mem = mem_row * rows
         # logger.debug('estimated memory: %.1f MB' % mem)
         chunk_size = 8096
         chunk_rows = int(chunk_size / mem_row) + 1
@@ -282,7 +282,7 @@ class BAGFile(File):
         return unc_min, unc_max
 
     def vr_uncertainty_min_max(self) -> Tuple[float, float]:
-        rows, cols = self.vr_refinements_shape()
+        # rows, cols = self.vr_refinements_shape()
         # logger.debug('shape: %s, %s' % (rows, cols))
 
         vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']

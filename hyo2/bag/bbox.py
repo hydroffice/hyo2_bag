@@ -1,13 +1,13 @@
 import os
 import logging
 
-log = logging.getLogger(__name__)
-
 from osgeo import ogr, osr
-from .meta import Meta
-from .helper import BAGError, Helper
-from . import __version__
+from hyo2.bag.meta import Meta
+from hyo2.bag.helper import BAGError, Helper
+from hyo2.bag import __version__
 
+
+logger = logging.getLogger(__name__)
 ogr.UseExceptions()
 
 
@@ -20,8 +20,7 @@ class Bbox2Gdal(object):
         'shp': ["ESRI Shapefile", "bag.shp"],
     }
 
-    def __init__(self, bag_meta, fmt="kml", title=None, out_file=None):
-        assert isinstance(bag_meta, Meta)
+    def __init__(self, bag_meta: Meta, fmt="kml", title=None, out_file=None):
         self.bag_meta = bag_meta
         if not self.bag_meta.valid_bbox():
             raise BAGError("invalid bbox read in BAG metadata")
@@ -29,7 +28,7 @@ class Bbox2Gdal(object):
         self.title = title
         if self.title is None:
             self.title = "Metadata"
-        log.debug("title: %s" % self.title)
+        logger.debug("title: %s" % self.title)
 
         # get the ogr driver
         self.drv = ogr.GetDriverByName(self.formats[fmt][0])
@@ -40,7 +39,7 @@ class Bbox2Gdal(object):
         self.out_file = out_file
         if self.out_file is None:
             self.out_file = os.path.abspath(self.formats[fmt][1])
-            log.debug("output: %s" % self.out_file)
+            logger.debug("output: %s" % self.out_file)
 
         if os.path.exists(self.out_file):
             os.remove(self.out_file)

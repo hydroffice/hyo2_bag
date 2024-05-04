@@ -22,8 +22,8 @@ HydrOffice BAG Tools
     :target: https://www.hydroffice.org/manuals/bag/index.html
     :alt: Latest Documentation
 
-.. image:: https://api.codacy.com/project/badge/Grade/c7551d8f90ba4b0086c7b8dc81376260
-    :target: https://www.codacy.com/app/hydroffice/hyo2_bag/dashboard
+.. image:: https://app.codacy.com/project/badge/Grade/b39ce4141d3e412fa789c7d5ee4971f3
+    :target: https://app.codacy.com/gh/hydroffice/hyo2_bag/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
     :alt: codacy
 
 .. image:: https://coveralls.io/repos/github/hydroffice/hyo2_bag/badge.svg?branch=master

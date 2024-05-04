@@ -1,14 +1,8 @@
-import os
-import sys
 import logging
-import numpy as np
-import h5py
-import traceback
 from lxml import etree
+from hyo2.bag.helper import Helper
 
 logger = logging.getLogger(__name__)
-
-from .helper import Helper
 
 
 class Meta:
@@ -200,7 +194,7 @@ class Meta:
             ret = self.xml_tree.xpath('//*/gmd:spatialRepresentationInfo/gmd:MD_Georectified/'
                                       'gmd:cornerPoints/gml:Point/gml:coordinates',
                                       namespaces=self.ns)[0].text.split()
-        except (etree.Error, IndexError) as e:
+        except (etree.Error, IndexError):
             try:
                 ret = self.xml_tree.xpath('//*/spatialRepresentationInfo/smXML:MD_Georectified/'
                                           'cornerPoints/gml:Point/gml:coordinates',
@@ -375,7 +369,7 @@ class Meta:
         if len(ret) == 0:
 
             ret = self.xml_tree.xpath('//*/gmd:dateStamp/gco:Date',
-                                              namespaces=self.ns)
+                                      namespaces=self.ns)
 
         if len(ret) == 0:
             logger.warning("unable to read the date string")
@@ -403,9 +397,10 @@ class Meta:
         """ attempts to read the survey date strings """
 
         try:
-            ret_begin = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                                            'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:beginPosition',
-                                            namespaces=self.ns)
+            ret_begin = self.xml_tree.xpath(
+                '//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
+                'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:beginPosition',
+                namespaces=self.ns)
 
             if len(ret_begin) == 0:
                 ret_begin = self.xml_tree.xpath(
@@ -446,9 +441,10 @@ class Meta:
         """ attempts to read the survey date strings """
 
         try:
-            ret_end = self.xml_tree.xpath('//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
-                                          'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:endPosition',
-                                          namespaces=self.ns)
+            ret_end = self.xml_tree.xpath(
+                '//*/gmd:identificationInfo/bag:BAG_DataIdentification/gmd:extent/gmd:EX_Extent/'
+                'gmd:temporalElement/gmd:EX_TemporalExtent/gmd:extent/gml:TimePeriod/gml:endPosition',
+                namespaces=self.ns)
 
             if len(ret_end) == 0:
                 ret_end = self.xml_tree.xpath(

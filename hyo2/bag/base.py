@@ -1,22 +1,10 @@
 import os
-import sys
 import logging
-
-log = logging.getLogger(__name__)
 
 import h5py
 from h5py._hl.base import with_phil
 
-from .helper import BAGError
-
-
-PY3 = sys.version_info[0] == 3
-if PY3:
-    def u(s):
-        return s
-else:
-    def u(s):
-        return unicode(s.replace(r'\\', r'\\\\'), "unicode_escape")
+logger = logging.getLogger(__name__)
 
 
 def is_bag(file_name):
@@ -69,19 +57,19 @@ class File(h5py.File):
 
     def close(self):
         """ Close the file.  All open objects become invalid """
-        log.debug("closing")
+        logger.debug("closing")
         super(File, self).close()
 
     def flush(self):
         """ Tell the BAG library to flush its buffers. """
-        log.debug("flushing")
+        logger.debug("flushing")
         super(File, self).flush()
 
     @with_phil
     def __repr__(self):
         if not self.id:
-            log.info("closed file")
-            r = u('<BAG file>\n')
+            logger.info("closed file")
+            r = '<BAG file>\n'
             r += "  <status: closed>"
         else:
             # Filename has to be forced to Unicode if it comes back bytes
@@ -89,13 +77,11 @@ class File(h5py.File):
             filename = self.filename
             if isinstance(filename, bytes):  # Can't decode fname
                 filename = filename.decode('utf8', 'replace')
-            r = u('<BAG file "%s" (mode %s)>') % (os.path.basename(filename), self.mode)
+            r = '<BAG file "%s" (mode %s)>' % (os.path.basename(filename), self.mode)
             r += "  <status: open>\n"
             r += "  <id: %s>\n" % self.id
             r += "  <name: %s>\n" % self.name
             r += "  <driver: %s>\n" % self.driver
             r += "  <user block size: %s>\n" % self.userblock_size
 
-        if PY3:
-            return r
-        return r.encode('utf8')
+        return r
