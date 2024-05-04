@@ -29,7 +29,7 @@ class TrackList2Csv(object):
         self.header = header
         if self.header is None:
             self.header = str()
-        if type(self.header) is tuple:
+        if isinstance(self.header, tuple):
             self.header = ",".join(fld for fld in self.header)
             self.header += "\n"
         logger.debug("header: %s" % self.header)

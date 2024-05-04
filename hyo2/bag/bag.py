@@ -3,7 +3,7 @@ import logging
 from typing import Tuple
 
 import numpy as np
-from lxml import etree
+from lxml import etree, isoschematron
 
 from hyo2.bag.base import is_bag, File
 from hyo2.bag.helper import BAGError, Helper
@@ -353,8 +353,8 @@ class BAGFile(File):
         return self[BAGFile._bag_tracking_list].dtype
 
     def has_valid_row_in_tracking_list(self):
-        rows, cols = self.elevation_shape()
-        # logger.info('rows: %s, cols: %s' % (rows, cols))
+        rows, _ = self.elevation_shape()
+        # logger.info('rows: %s, cols: %s' % (rows, _))
 
         tl = self.tracking_list()
         for idx, row in enumerate(tl['row']):
@@ -363,7 +363,7 @@ class BAGFile(File):
                 return False
 
         return True
-    
+
     def has_valid_col_in_tracking_list(self):
         rows, cols = self.elevation_shape()
         # logger.info('rows: %s, cols: %s' % (rows, cols))
@@ -432,7 +432,7 @@ class BAGFile(File):
 
         is_valid = self.validate_metadata(xml_string)
         if not is_valid:
-            logger.info("the passed medatadata file is not valid")
+            logger.info("the passed metadata file is not valid")
             return
 
         del self[BAGFile._bag_metadata]
@@ -441,7 +441,7 @@ class BAGFile(File):
         for i, bt in enumerate(xml_string):
             ds[i] = bytes([bt])
 
-    def validate_metadata(self, xml_string=None):
+    def validate_metadata(self, xml_string: None | bytes = None) -> bool:
         """ Validate metadata based on XML Schemas and schematron. """
         # clean metadata error list
         self.meta_errors = list()
@@ -454,7 +454,7 @@ class BAGFile(File):
         try:
             xml_tree = etree.fromstring(xml_string)
         except etree.Error as e:
-            logger.warning("unabled to parse XML metadata: %s" % e)
+            logger.warning("unable to parse XML metadata: %s" % e)
             self.meta_errors.append(e)
             return False
 
@@ -463,7 +463,7 @@ class BAGFile(File):
             schema_doc = etree.parse(schema_path)
             schema = etree.XMLSchema(schema_doc)
         except etree.Error as e:
-            logger.warning("unabled to parse XML schema: %s" % e)
+            logger.warning("unable to parse XML schema: %s" % e)
             self.meta_errors.append(e)
             return False
 
@@ -483,22 +483,14 @@ class BAGFile(File):
             schematron_path = os.path.join(Helper.iso19757_3_folder(), 'bag_metadata_profile.sch')
             schematron_doc = etree.parse(schematron_path)
         except etree.DocumentInvalid as e:
-            logger.warning("unabled to parse BAG schematron: %s" % e)
-            self.meta_errors.append(e)
-            return False
-
-        try:
-            from lxml import isoschematron
-        except IOError as e:
-            msg = "Unable to load lxml isoschematron files"
-            logger.warning("%s: %s" % (msg, e))
+            logger.warning("unable to parse BAG schematron: %s" % e)
             self.meta_errors.append(e)
             return False
 
         try:
             schematron = isoschematron.Schematron(schematron_doc, store_report=True)
         except etree.DocumentInvalid as e:
-            logger.warning("unabled to load BAG schematron: %s" % e)
+            logger.warning("unable to load BAG schematron: %s" % e)
             self.meta_errors.append(e)
             return False
 
