@@ -2,6 +2,7 @@ import os
 import logging
 from typing import Tuple
 
+from osgeo import osr
 import numpy as np
 from lxml import etree, isoschematron
 
@@ -86,7 +87,7 @@ class BAGFile(File):
             elevation.attrs.create(cls._bag_elevation_min_ev, 0.0, shape=(), dtype=np.float32)
             elevation.attrs.create(cls._bag_elevation_max_ev, 0.0, shape=(), dtype=np.float32)
 
-            new_bag.create_dataset(cls._bag_metadata, shape=(1, ), dtype="S1")
+            new_bag.create_dataset(cls._bag_metadata, shape=(1,), dtype="S1")
 
             tracking_list = new_bag.create_dataset(cls._bag_tracking_list, shape=(), dtype=cls._bag_tracking_list_type)
             tracking_list.attrs.create(cls._bag_tracking_list_len, 0, shape=(), dtype=np.uint32)
@@ -281,6 +282,51 @@ class BAGFile(File):
 
         return unc_min, unc_max
 
+    def uncertainty_greater_than(self, th: float) -> list[list[int | float]]:
+        rows, cols = self.uncertainty_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        self.populate_metadata()
+
+        x_min = self.meta.sw[0]
+        y_min = self.meta.sw[1]
+        x_res = self.meta.res_x
+        y_res = self.meta.res_y
+        logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
+
+        in_srs = osr.SpatialReference()
+        in_srs.ImportFromWkt(self.meta.wkt_srs)
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromEPSG(4326)
+        ctr = osr.CoordinateTransformation(in_srs, out_srs)
+
+        mem_row = cols * 32 / 1024 / 1024
+        # mem = mem_row * rows
+        # logger.debug('estimated memory: %.1f MB' % mem)
+        chunk_size = 8096
+        chunk_rows = int(chunk_size / mem_row) + 1
+        # logger.debug('nr of rows per chunk: %s' % chunk_rows)
+
+        xyz = list()
+        for start in range(0, rows, chunk_rows):
+            stop = start + chunk_rows
+            if stop > rows:
+                stop = rows
+
+            unc = self.uncertainty(row_range=slice(start, stop))
+            ijs = np.argwhere(unc > th)
+            for ij in ijs:
+                i = ij[0]
+                j = ij[1]
+                e = x_min + j * x_res
+                n = y_min + i * y_res
+                lon, lat, _ = ctr.TransformPoint(e, n)
+                u = float(unc[i, j])
+                xyz.append([float(lat), float(lon), u])
+                # logger.info("%s" % (xyz[-1]))
+
+        return xyz
+
     def vr_uncertainty_min_max(self) -> Tuple[float, float]:
         # rows, cols = self.vr_refinements_shape()
         # logger.debug('shape: %s, %s' % (rows, cols))
@@ -293,7 +339,64 @@ class BAGFile(File):
 
         return np.nanmin(vr_unc), np.nanmax(vr_unc)
 
+    def vr_uncertainty_greater_than(self, th: float) -> list[list[int | float]]:
+        # rows, cols = self.vr_refinements_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        self.populate_metadata()
+
+        x_min = self.meta.sw[0]
+        y_min = self.meta.sw[1]
+        x_res = self.meta.res_x
+        y_res = self.meta.res_y
+        logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
+
+        in_srs = osr.SpatialReference()
+        in_srs.ImportFromWkt(self.meta.wkt_srs)
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromEPSG(4326)
+        ctr = osr.CoordinateTransformation(in_srs, out_srs)
+
+        vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
+        mask = vr_unc == BAGFile.BAG_NAN
+        vr_unc[mask] = np.nan
+
+        xyz_dict = dict()
+        for idx, unc in enumerate(vr_unc):
+            if unc > th:
+                xyz_dict[idx] = unc
+
+        logger.info("Located %d outliers" % len(xyz_dict))
+
+        xyz = list()
+        vr_ixs = self[BAGFile._bag_varres_metadata][:]
+        rows, cols = vr_ixs.shape
+        i = 0
+        for sg_r in range(rows):
+            for sg_c in range(cols):
+                if vr_ixs[sg_r, sg_c][1] == 0:
+                    continue
+                ir = vr_ixs[sg_r, sg_c][1] * vr_ixs[sg_r, sg_c][2]
+                for ir_idx in range(ir):
+                    j = i + ir_idx
+                    if j not in xyz_dict:
+                        continue
+                    unc = float(xyz_dict[j])
+                    logger.debug("Located outliers: %d %f in %d,%d: %s" % (j, unc, sg_r, sg_c, vr_ixs[sg_r, sg_c]))
+                    # vr_ixs[r, c]
+                    rfn_r = ir_idx // vr_ixs[sg_r, sg_c][1]
+                    rfn_c = ir_idx % vr_ixs[sg_r, sg_c][1]
+                    logger.debug("%d > %d,%d" % (ir_idx, rfn_r, rfn_c))
+                    e = x_min + (sg_c - 0.5) * x_res + vr_ixs[sg_r, sg_c][5] + rfn_c * vr_ixs[sg_r, sg_c][3]
+                    n = y_min + (sg_r - 0.5) * y_res + vr_ixs[sg_r, sg_c][6] + rfn_r * vr_ixs[sg_r, sg_c][4]
+                    lon, lat, _ = ctr.TransformPoint(e, n)
+                    xyz.append([float(lat), float(lon), unc])
+                i += ir
+
+        return xyz
+
     def has_density(self):
+        # noinspection PyBroadException
         try:
             self[BAGFile._bag_elevation_solution]['num_soundings']
         except Exception:
@@ -437,7 +540,7 @@ class BAGFile(File):
 
         del self[BAGFile._bag_metadata]
         xml_sz = len(xml_string)
-        ds = self.create_dataset(self._bag_metadata, (xml_sz, ), dtype="S1")
+        ds = self.create_dataset(self._bag_metadata, (xml_sz,), dtype="S1")
         for i, bt in enumerate(xml_string):
             ds[i] = bytes([bt])
 
@@ -566,7 +669,7 @@ class BAGFile(File):
 
         new_xml = etree.tostring(xml_tree, pretty_print=True)
         del self[BAGFile._bag_metadata]
-        ds = self.create_dataset(BAGFile._bag_metadata, shape=(len(new_xml), ), dtype="S1")
+        ds = self.create_dataset(BAGFile._bag_metadata, shape=(len(new_xml),), dtype="S1")
         for i, x in enumerate(new_xml):
             ds[i] = bytes([x])
 
