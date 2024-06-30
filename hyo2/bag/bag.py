@@ -292,12 +292,13 @@ class BAGFile(File):
         y_min = self.meta.sw[1]
         x_res = self.meta.res_x
         y_res = self.meta.res_y
-        logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
+        # logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
+        out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ctr = osr.CoordinateTransformation(in_srs, out_srs)
 
         mem_row = cols * 32 / 1024 / 1024
@@ -320,7 +321,7 @@ class BAGFile(File):
                 j = ij[1]
                 e = x_min + j * x_res
                 n = y_min + i * y_res
-                lon, lat, _ = ctr.TransformPoint(e, n)
+                lat, lon, _ = ctr.TransformPoint(e, n)
                 u = float(unc[i, j])
                 xyz.append([float(lat), float(lon), u])
                 # logger.info("%s" % (xyz[-1]))
@@ -349,12 +350,13 @@ class BAGFile(File):
         y_min = self.meta.sw[1]
         x_res = self.meta.res_x
         y_res = self.meta.res_y
-        logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
+        # logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
+        out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ctr = osr.CoordinateTransformation(in_srs, out_srs)
 
         vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
@@ -366,7 +368,7 @@ class BAGFile(File):
             if unc > th:
                 xyz_dict[idx] = unc
 
-        logger.info("Located %d outliers" % len(xyz_dict))
+        # logger.info("Located %d outliers" % len(xyz_dict))
 
         xyz = list()
         vr_ixs = self[BAGFile._bag_varres_metadata][:]
@@ -382,14 +384,14 @@ class BAGFile(File):
                     if j not in xyz_dict:
                         continue
                     unc = float(xyz_dict[j])
-                    logger.debug("Located outliers: %d %f in %d,%d: %s" % (j, unc, sg_r, sg_c, vr_ixs[sg_r, sg_c]))
+                    # logger.debug("Located outliers: %d %f in %d,%d: %s" % (j, unc, sg_r, sg_c, vr_ixs[sg_r, sg_c]))
                     # vr_ixs[r, c]
                     rfn_r = ir_idx // vr_ixs[sg_r, sg_c][1]
                     rfn_c = ir_idx % vr_ixs[sg_r, sg_c][1]
-                    logger.debug("%d > %d,%d" % (ir_idx, rfn_r, rfn_c))
+                    # logger.debug("%d > %d,%d" % (ir_idx, rfn_r, rfn_c))
                     e = x_min + (sg_c - 0.5) * x_res + vr_ixs[sg_r, sg_c][5] + rfn_c * vr_ixs[sg_r, sg_c][3]
                     n = y_min + (sg_r - 0.5) * y_res + vr_ixs[sg_r, sg_c][6] + rfn_r * vr_ixs[sg_r, sg_c][4]
-                    lon, lat, _ = ctr.TransformPoint(e, n)
+                    lat,lon, _ = ctr.TransformPoint(e, n)
                     xyz.append([float(lat), float(lon), unc])
                 i += ir
 
