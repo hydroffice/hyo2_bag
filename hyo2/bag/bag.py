@@ -320,11 +320,11 @@ class BAGFile(File):
                 i = ij[0]
                 j = ij[1]
                 e = x_min + j * x_res
-                n = y_min + i * y_res
+                n = y_min + (start + i) * y_res
                 lat, lon, _ = ctr.TransformPoint(e, n)
                 u = float(unc[i, j])
                 xyz.append([float(lat), float(lon), u])
-                # logger.info("%s" % (xyz[-1]))
+                # logger.info("%d,%d: %.7f %.7f %.3f" % ((start + i), j, xyz[-1][0], xyz[-1][1], xyz[-1][2]))
 
         return xyz
 
