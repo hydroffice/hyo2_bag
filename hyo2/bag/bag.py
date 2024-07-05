@@ -328,6 +328,110 @@ class BAGFile(File):
 
         return xyz
 
+    def uncertainty_has_depth(self) -> list[list[int | float]]:
+        rows, cols = self.uncertainty_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        self.populate_metadata()
+
+        x_min = self.meta.sw[0]
+        y_min = self.meta.sw[1]
+        x_res = self.meta.res_x
+        y_res = self.meta.res_y
+        # logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
+
+        in_srs = osr.SpatialReference()
+        in_srs.ImportFromWkt(self.meta.wkt_srs)
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromEPSG(4326)
+        out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        ctr = osr.CoordinateTransformation(in_srs, out_srs)
+
+        mem_row = cols * 32 / 1024 / 1024
+        # mem = mem_row * rows
+        # logger.debug('estimated memory: %.1f MB' % mem)
+        chunk_size = 8096
+        chunk_rows = int(chunk_size / mem_row) + 1
+        # logger.debug('nr of rows per chunk: %s' % chunk_rows)
+
+        xyz = list()
+        for start in range(0, rows, chunk_rows):
+            stop = start + chunk_rows
+            if stop > rows:
+                stop = rows
+
+            unc = self.uncertainty(row_range=slice(start, stop))
+            # logger.info(unc)
+            dep = self.elevation(row_range=slice(start, stop))
+            # logger.info(dep)
+            unc[np.isfinite(dep)] = np.nan
+            # logger.info(unc)
+            ijs = np.argwhere(np.isfinite(unc))
+            # logger.info(ijs)
+            for ij in ijs:
+                i = ij[0]
+                j = ij[1]
+                e = x_min + j * x_res
+                n = y_min + (start + i) * y_res
+                lat, lon, _ = ctr.TransformPoint(e, n)
+                u = float(unc[i, j])
+                xyz.append([float(lat), float(lon), u])
+                # logger.info("%d,%d: %.7f %.7f %.3f" % ((start + i), j, xyz[-1][0], xyz[-1][1], xyz[-1][2]))
+
+        return xyz
+
+    def depth_has_uncertainty(self) -> list[list[int | float]]:
+        rows, cols = self.uncertainty_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        self.populate_metadata()
+
+        x_min = self.meta.sw[0]
+        y_min = self.meta.sw[1]
+        x_res = self.meta.res_x
+        y_res = self.meta.res_y
+        # logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
+
+        in_srs = osr.SpatialReference()
+        in_srs.ImportFromWkt(self.meta.wkt_srs)
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromEPSG(4326)
+        out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        ctr = osr.CoordinateTransformation(in_srs, out_srs)
+
+        mem_row = cols * 32 / 1024 / 1024
+        # mem = mem_row * rows
+        # logger.debug('estimated memory: %.1f MB' % mem)
+        chunk_size = 8096
+        chunk_rows = int(chunk_size / mem_row) + 1
+        # logger.debug('nr of rows per chunk: %s' % chunk_rows)
+
+        xyz = list()
+        for start in range(0, rows, chunk_rows):
+            stop = start + chunk_rows
+            if stop > rows:
+                stop = rows
+
+            unc = self.uncertainty(row_range=slice(start, stop))
+            # logger.info(unc)
+            dep = self.elevation(row_range=slice(start, stop))
+            # logger.info(dep)
+            dep[np.isfinite(unc)] = np.nan
+            # logger.info(dep)
+            ijs = np.argwhere(np.isfinite(dep))
+            # logger.info(ijs)
+            for ij in ijs:
+                i = ij[0]
+                j = ij[1]
+                e = x_min + j * x_res
+                n = y_min + (start + i) * y_res
+                lat, lon, _ = ctr.TransformPoint(e, n)
+                z = -float(dep[i, j])
+                xyz.append([float(lat), float(lon), z])
+                # logger.info("%d,%d: %.7f %.7f %.3f" % ((start + i), j, xyz[-1][0], xyz[-1][1], xyz[-1][2]))
+
+        return xyz
+
     def vr_uncertainty_min_max(self) -> Tuple[float, float]:
         # rows, cols = self.vr_refinements_shape()
         # logger.debug('shape: %s, %s' % (rows, cols))
@@ -391,7 +495,129 @@ class BAGFile(File):
                     # logger.debug("%d > %d,%d" % (ir_idx, rfn_r, rfn_c))
                     e = x_min + (sg_c - 0.5) * x_res + vr_ixs[sg_r, sg_c][5] + rfn_c * vr_ixs[sg_r, sg_c][3]
                     n = y_min + (sg_r - 0.5) * y_res + vr_ixs[sg_r, sg_c][6] + rfn_r * vr_ixs[sg_r, sg_c][4]
-                    lat,lon, _ = ctr.TransformPoint(e, n)
+                    lat, lon, _ = ctr.TransformPoint(e, n)
+                    xyz.append([float(lat), float(lon), unc])
+                i += ir
+
+        return xyz
+
+    def vr_depth_has_uncertainty(self) -> list[list[int | float]]:
+        # rows, cols = self.vr_refinements_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        self.populate_metadata()
+
+        x_min = self.meta.sw[0]
+        y_min = self.meta.sw[1]
+        x_res = self.meta.res_x
+        y_res = self.meta.res_y
+        # logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
+
+        in_srs = osr.SpatialReference()
+        in_srs.ImportFromWkt(self.meta.wkt_srs)
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromEPSG(4326)
+        out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        ctr = osr.CoordinateTransformation(in_srs, out_srs)
+
+        vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
+        mask = vr_unc == BAGFile.BAG_NAN
+        vr_unc[mask] = np.nan
+        vr_dep = self[BAGFile._bag_varres_refinements][0]['depth']
+        mask = vr_dep == BAGFile.BAG_NAN
+        vr_dep[mask] = np.nan
+
+        xyz_dict = dict()
+        for idx, unc in enumerate(vr_unc):
+            dep = vr_dep[idx]
+            if np.isfinite(dep) and np.isnan(unc):
+                xyz_dict[idx] = dep
+
+        # logger.info("Located %d outliers" % len(xyz_dict))
+
+        xyz = list()
+        vr_ixs = self[BAGFile._bag_varres_metadata][:]
+        rows, cols = vr_ixs.shape
+        i = 0
+        for sg_r in range(rows):
+            for sg_c in range(cols):
+                if vr_ixs[sg_r, sg_c][1] == 0:
+                    continue
+                ir = vr_ixs[sg_r, sg_c][1] * vr_ixs[sg_r, sg_c][2]
+                for ir_idx in range(ir):
+                    j = i + ir_idx
+                    if j not in xyz_dict:
+                        continue
+                    dep = float(xyz_dict[j])
+                    # logger.debug("Located outliers: %d %f in %d,%d: %s" % (j, unc, sg_r, sg_c, vr_ixs[sg_r, sg_c]))
+                    # vr_ixs[r, c]
+                    rfn_r = ir_idx // vr_ixs[sg_r, sg_c][1]
+                    rfn_c = ir_idx % vr_ixs[sg_r, sg_c][1]
+                    # logger.debug("%d > %d,%d" % (ir_idx, rfn_r, rfn_c))
+                    e = x_min + (sg_c - 0.5) * x_res + vr_ixs[sg_r, sg_c][5] + rfn_c * vr_ixs[sg_r, sg_c][3]
+                    n = y_min + (sg_r - 0.5) * y_res + vr_ixs[sg_r, sg_c][6] + rfn_r * vr_ixs[sg_r, sg_c][4]
+                    lat, lon, _ = ctr.TransformPoint(e, n)
+                    xyz.append([float(lat), float(lon), dep])
+                i += ir
+
+        return xyz
+
+    def vr_uncertainty_has_depth(self) -> list[list[int | float]]:
+        # rows, cols = self.vr_refinements_shape()
+        # logger.debug('shape: %s, %s' % (rows, cols))
+
+        self.populate_metadata()
+
+        x_min = self.meta.sw[0]
+        y_min = self.meta.sw[1]
+        x_res = self.meta.res_x
+        y_res = self.meta.res_y
+        # logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
+
+        in_srs = osr.SpatialReference()
+        in_srs.ImportFromWkt(self.meta.wkt_srs)
+        out_srs = osr.SpatialReference()
+        out_srs.ImportFromEPSG(4326)
+        out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        ctr = osr.CoordinateTransformation(in_srs, out_srs)
+
+        vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
+        mask = vr_unc == BAGFile.BAG_NAN
+        vr_unc[mask] = np.nan
+        vr_dep = self[BAGFile._bag_varres_refinements][0]['depth']
+        mask = vr_dep == BAGFile.BAG_NAN
+        vr_dep[mask] = np.nan
+
+        xyz_dict = dict()
+        for idx, unc in enumerate(vr_unc):
+            dep = vr_dep[idx]
+            if np.isfinite(unc) and np.isnan(dep):
+                xyz_dict[idx] = unc
+
+        # logger.info("Located %d outliers" % len(xyz_dict))
+
+        xyz = list()
+        vr_ixs = self[BAGFile._bag_varres_metadata][:]
+        rows, cols = vr_ixs.shape
+        i = 0
+        for sg_r in range(rows):
+            for sg_c in range(cols):
+                if vr_ixs[sg_r, sg_c][1] == 0:
+                    continue
+                ir = vr_ixs[sg_r, sg_c][1] * vr_ixs[sg_r, sg_c][2]
+                for ir_idx in range(ir):
+                    j = i + ir_idx
+                    if j not in xyz_dict:
+                        continue
+                    unc = float(xyz_dict[j])
+                    # logger.debug("Located outliers: %d %f in %d,%d: %s" % (j, unc, sg_r, sg_c, vr_ixs[sg_r, sg_c]))
+                    # vr_ixs[r, c]
+                    rfn_r = ir_idx // vr_ixs[sg_r, sg_c][1]
+                    rfn_c = ir_idx % vr_ixs[sg_r, sg_c][1]
+                    # logger.debug("%d > %d,%d" % (ir_idx, rfn_r, rfn_c))
+                    e = x_min + (sg_c - 0.5) * x_res + vr_ixs[sg_r, sg_c][5] + rfn_c * vr_ixs[sg_r, sg_c][3]
+                    n = y_min + (sg_r - 0.5) * y_res + vr_ixs[sg_r, sg_c][6] + rfn_r * vr_ixs[sg_r, sg_c][4]
+                    lat, lon, _ = ctr.TransformPoint(e, n)
                     xyz.append([float(lat), float(lon), unc])
                 i += ir
 
