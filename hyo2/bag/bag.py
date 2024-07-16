@@ -330,7 +330,7 @@ class BAGFile(File):
 
     def uncertainty_has_depth(self) -> list[list[int | float]]:
         rows, cols = self.uncertainty_shape()
-        # logger.debug('shape: %s, %s' % (rows, cols))
+        # logger.debug('shape: %s, %s (%d)' % (rows, cols, rows * cols))
 
         self.populate_metadata()
 
@@ -361,9 +361,9 @@ class BAGFile(File):
                 stop = rows
 
             unc = self.uncertainty(row_range=slice(start, stop))
-            # logger.info(unc)
+            # logger.info("unc: %d, %d" % (np.isnan(unc).sum(), np.isfinite(unc).sum()))
             dep = self.elevation(row_range=slice(start, stop))
-            # logger.info(dep)
+            # logger.info("dep: %d, %d" % (np.isnan(dep).sum(), np.isfinite(dep).sum()))
             unc[np.isfinite(dep)] = np.nan
             # logger.info(unc)
             ijs = np.argwhere(np.isfinite(unc))
