@@ -707,7 +707,7 @@ class BAGFile(File):
 
         return True
 
-    def metadata(self, as_string=True, as_pretty_xml=True):
+    def metadata(self, as_string: bool = True, as_pretty_xml: bool = True) -> bytes | str:
         """ Return the metadata
 
         as_string

@@ -1,5 +1,8 @@
 import logging
+import dateutil.parser
 from lxml import etree
+from osgeo import osr
+from hyo2.abc2.lib.gdal_aux import GdalAux
 from hyo2.bag.helper import Helper
 
 logger = logging.getLogger(__name__)
@@ -23,39 +26,41 @@ class Meta:
         'smXML': 'http://metadata.dgiwg.org/smXML',
     }
 
-    def __init__(self, meta_xml):
+    def __init__(self, meta_xml: bytes | str) -> None:
+        GdalAux.push_gdal_error_handler()
+
         self.xml_tree = etree.fromstring(meta_xml)
 
         # rows and cols
-        self.rows = None
-        self.cols = None
+        self.rows: int | None = None
+        self.cols: int | None = None
         self._read_rows_and_cols()
 
         # resolution along x and y axes
-        self.res_x = None
-        self.res_y = None
+        self.res_x: float | None = None
+        self.res_y: float | None = None
         self._read_res_x_and_y()
 
         # corner SW and NE
-        self.sw = None
-        self.ne = None
+        self.sw: float | None = None
+        self.ne: float | None = None
         self._read_corners_sw_and_ne()
 
         # wkt projection
-        self.wkt_srs = None
-        self.xml_srs = None
+        self.wkt_srs: str | None = None
+        self.xml_srs: str | None = None
         self._read_wkt_prj()
 
         # wkt vertical datum
-        self.wkt_vertical_datum = None
-        self.xml_vertical_datum = None
+        self.wkt_vertical_datum: str | None = None
+        self.xml_vertical_datum: str | None = None
         self._read_wkt_vertical_datum()
 
         # bbox
-        self.lon_min = None
-        self.lon_max = None
-        self.lat_min = None
-        self.lat_max = None
+        self.lon_min: float | None = None
+        self.lon_max: float | None = None
+        self.lat_min: float | None = None
+        self.lat_max: float | None = None
         self._read_bbox()
 
         # abstract
@@ -78,7 +83,7 @@ class Meta:
 
         # uncertainty type
         self.sec_constr = None
-        self._read_security_contraints()
+        self._read_security_constraints()
 
     def __str__(self):
         output = "<metadata>"
@@ -125,8 +130,8 @@ class Meta:
 
     def wkt_bbox(self):
         return "LINESTRING Z(%.6f %.6f 0, %.6f %.6f 0, %.6f %.6f 0, %.6f %.6f 0, %.6f %.6f 0)" \
-               % (self.lon_min, self.lat_min, self.lon_min, self.lat_max, self.lon_max, self.lat_max, self.lon_max, self.lat_min,
-                  self.lon_min, self.lat_min)
+               % (self.lon_min, self.lat_min, self.lon_min, self.lat_max, self.lon_max, self.lat_max, self.lon_max,
+                  self.lat_min, self.lon_min, self.lat_min)
 
     def _read_rows_and_cols(self):
         """ attempts to read rows and cols info """
@@ -237,7 +242,18 @@ class Meta:
                 return
 
         try:
-            self.wkt_srs = ret[0].text
+            space = self.xml_tree.xpath(
+                '//*/gmd:referenceSystemInfo/gmd:MD_ReferenceSystem/'
+                'gmd:referenceSystemIdentifier/gmd:RS_Identifier/gmd:codeSpace/gco:CharacterString',
+                namespaces=self.ns)
+            # logger.info("codeSpace: %s" % space[0].text)
+
+            if space[0].text == "EPSG":
+                sr = osr.SpatialReference()
+                sr.ImportFromEPSG(int(ret[0].text))
+                self.wkt_srs = sr.ExportToWkt()
+            else:
+                self.wkt_srs = ret[0].text
 
         except (ValueError, IndexError) as e:
             logger.warning("unable to read the WKT projection string: %s" % e)
@@ -269,7 +285,18 @@ class Meta:
                 return
 
         try:
-            self.wkt_vertical_datum = ret[1].text
+            space = self.xml_tree.xpath(
+                '//*/gmd:referenceSystemInfo/gmd:MD_ReferenceSystem/'
+                'gmd:referenceSystemIdentifier/gmd:RS_Identifier/gmd:codeSpace/gco:CharacterString',
+                namespaces=self.ns)
+            # logger.info("codeSpace: %s" % space[0].text)
+
+            if space[1].text == "EPSG":
+                sr = osr.SpatialReference()
+                sr.ImportFromEPSG(int(ret[1].text))
+                self.wkt_vertical_datum = sr.ExportToWkt()
+            else:
+                self.wkt_vertical_datum = ret[1].text
 
         except (ValueError, IndexError) as e:
             logger.warning("unable to read the WKT vertical datum string: %s" % e)
@@ -381,12 +408,12 @@ class Meta:
             return
 
         tm_date = None
+        # noinspection PyBroadException
         try:
-            import dateutil.parser
             parsed_date = dateutil.parser.parse(text_date)
             tm_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
-        except Exception:
-            logger.warning("unable to handle the date string: %s" % text_date)
+        except Exception as e:
+            logger.warning("unable to handle the date string: %s (%s)" % (text_date, e), exc_info=True)
 
         if tm_date is None:
             self.date = text_date
@@ -423,12 +450,13 @@ class Meta:
             return
 
         tm_begin_date = None
+        # noinspection PyBroadException
         try:
-            import dateutil.parser
             parsed_date = dateutil.parser.parse(text_begin_date)
             tm_begin_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
-        except Exception:
-            logger.warning("unable to handle the survey begin date string: %s" % text_begin_date)
+        except Exception as e:
+            logger.warning("unable to handle the survey begin date string: %s (%s)" % (text_begin_date, e),
+                           exc_info=True)
 
         if tm_begin_date is None:
             self.survey_start_date = text_begin_date
@@ -466,12 +494,12 @@ class Meta:
             return
 
         tm_end_date = None
+        # noinspection PyBroadException
         try:
-            import dateutil.parser
             parsed_date = dateutil.parser.parse(text_end_date)
             tm_end_date = parsed_date.strftime('%Y-%m-%dT%H:%M:%SZ')
-        except Exception:
-            logger.warning("unable to handle the survey end date string: %s" % text_end_date)
+        except Exception as e:
+            logger.warning("unable to handle the survey end date string: %s (%s)" % (text_end_date, e), exc_info=True)
 
         if tm_end_date is None:
             self.survey_end_date = text_end_date
@@ -510,7 +538,7 @@ class Meta:
             logger.warning("unable to read the uncertainty type attribute: %s" % e)
             return
 
-    def _read_security_contraints(self):
+    def _read_security_constraints(self):
         """ attempts to read the uncertainty type """
         old_format = False
 
