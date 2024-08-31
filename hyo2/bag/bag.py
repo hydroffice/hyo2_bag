@@ -296,6 +296,8 @@ class BAGFile(File):
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
+        if in_srs.IsCompound():
+            in_srs.StripVertical()
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
@@ -342,6 +344,8 @@ class BAGFile(File):
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
+        if in_srs.IsCompound():
+            in_srs.StripVertical()
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
@@ -394,6 +398,8 @@ class BAGFile(File):
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
+        if in_srs.IsCompound():
+            in_srs.StripVertical()
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
@@ -458,6 +464,8 @@ class BAGFile(File):
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
+        if in_srs.IsCompound():
+            in_srs.StripVertical()
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
@@ -515,6 +523,8 @@ class BAGFile(File):
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
+        if in_srs.IsCompound():
+            in_srs.StripVertical()
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
@@ -576,6 +586,8 @@ class BAGFile(File):
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
+        if in_srs.IsCompound():
+            in_srs.StripVertical()
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)

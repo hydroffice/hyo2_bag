@@ -55,6 +55,8 @@ class Density2Gdal(object):
             self.srs.ImportFromWkt(self.bag_meta.wkt_srs)
         else:
             logger.warning("unable to recover valid spatial reference info")
+        if self.srs.IsCompound():
+            self.srs.StripVertical()
         self.rst.SetProjection(self.srs.ExportToWkt())
         self.bnd.FlushCache()
 
