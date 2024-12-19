@@ -49,11 +49,13 @@ class Meta:
         # wkt projection
         self.wkt_srs: str | None = None
         self.xml_srs: str | None = None
+        self.wkt_srs_epsg_code: str | None = None
         self._read_wkt_prj()
 
         # wkt vertical datum
         self.wkt_vertical_datum: str | None = None
         self.xml_vertical_datum: str | None = None
+        self.wkt_vertical_datum_epsg_code: str | None = None
         self._read_wkt_vertical_datum()
 
         # bbox
@@ -249,10 +251,12 @@ class Meta:
             # logger.info("codeSpace: %s" % space[0].text)
 
             if space[0].text == "EPSG":
+                self.wkt_srs_epsg_code = int(ret[0].text)
                 sr = osr.SpatialReference()
-                sr.ImportFromEPSG(int(ret[0].text))
+                sr.ImportFromEPSG(self.wkt_srs_epsg_code)
                 self.wkt_srs = sr.ExportToWkt()
             else:
+                self.wkt_srs_epsg_code = None
                 self.wkt_srs = ret[0].text
 
         except (ValueError, IndexError) as e:
@@ -292,10 +296,12 @@ class Meta:
             # logger.info("codeSpace: %s" % space[0].text)
 
             if space[1].text == "EPSG":
+                self.wkt_vertical_datum_epsg_code = int(ret[1].text)
                 sr = osr.SpatialReference()
-                sr.ImportFromEPSG(int(ret[1].text))
+                sr.ImportFromEPSG(self.wkt_vertical_datum_epsg_code)
                 self.wkt_vertical_datum = sr.ExportToWkt()
             else:
+                self.wkt_vertical_datum_epsg_code = None
                 self.wkt_vertical_datum = ret[1].text
 
         except (ValueError, IndexError) as e:
