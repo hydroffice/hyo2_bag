@@ -42,8 +42,8 @@ class Meta:
         self._read_res_x_and_y()
 
         # corner SW and NE
-        self.sw: float | None = None
-        self.ne: float | None = None
+        self.sw: list[float] | None = None
+        self.ne: list[float] | None = None
         self._read_corners_sw_and_ne()
 
         # wkt projection
