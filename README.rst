@@ -47,9 +47,15 @@ The main goal is to speed up both algorithms testing and research-2-operation.
 The BAG package collects tools for working with `Bathymetric Attributed Grid (BAG) <https://en.wikipedia.org/wiki/Bathymetric_attributed_grid>`_ files.
 The BAG package is used in `BAG Explorer <https://www.hydroffice.org/bag/main>`_ to explore BAG data files.
 
-.. note::
+   |info| **IMPORTANT NOTE**
+
    BAG is a data format developed and maintained by the `Open Navigation Surface Working Group <http://www.opennavsurf.org/>`_.
-   For the official reference implementation, go to `https://github.com/OpenNavigationSurface/BAG <https://github.com/OpenNavigationSurface/BAG>`_
+
+   For the official BAG reference implementation, go to `https://github.com/OpenNavigationSurface/BAG <https://github.com/OpenNavigationSurface/BAG>`_
+
+
+.. |info| image:: https://www.hydroffice.org/img/info.svg
+    :alt: info
 
 
 Dependencies
