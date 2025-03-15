@@ -87,7 +87,7 @@ class Meta:
         self.sec_constr = None
         self._read_security_constraints()
 
-    def __str__(self):
+    def __str__(self) -> str:
         output = "<metadata>"
 
         if (self.rows is not None) and (self.cols is not None):
@@ -122,20 +122,20 @@ class Meta:
 
         return output
 
-    def valid_bbox(self):
+    def valid_bbox(self) -> bool:
         return (self.lon_min is not None) and (self.lon_max is not None) and \
                (self.lat_min is not None) and (self.lat_max is not None)
 
-    def geo_extent(self):
+    def geo_extent(self) -> tuple[float, float, float, float]:
         """ Return the geographic extent as a tuple: (x_min, x_max, y_min, y_max) """
         return self.lon_min, self.lon_max, self.lat_min, self.lat_max
 
-    def wkt_bbox(self):
+    def wkt_bbox(self) -> str:
         return "LINESTRING Z(%.6f %.6f 0, %.6f %.6f 0, %.6f %.6f 0, %.6f %.6f 0, %.6f %.6f 0)" \
                % (self.lon_min, self.lat_min, self.lon_min, self.lat_max, self.lon_max, self.lat_max, self.lon_max,
                   self.lat_min, self.lon_min, self.lat_min)
 
-    def _read_rows_and_cols(self):
+    def _read_rows_and_cols(self) -> None:
         """ attempts to read rows and cols info """
 
         try:
@@ -164,7 +164,7 @@ class Meta:
             logger.warning("unable to read rows and cols: %s" % e)
             return
 
-    def _read_res_x_and_y(self):
+    def _read_res_x_and_y(self) -> None:
         """ attempts to read resolution along x- and y- axes """
 
         try:
@@ -194,7 +194,7 @@ class Meta:
             logger.warning("unable to read res x and y: %s" % e)
             return
 
-    def _read_corners_sw_and_ne(self):
+    def _read_corners_sw_and_ne(self) -> None:
         """ attempts to read corners SW and NE """
 
         try:
@@ -218,7 +218,7 @@ class Meta:
             logger.warning("unable to read corners SW and NE: %s" % e)
             return
 
-    def _read_wkt_prj(self):
+    def _read_wkt_prj(self) -> None:
         """ attempts to read the WKT projection string """
 
         try:
@@ -263,7 +263,7 @@ class Meta:
             logger.warning("unable to read the WKT projection string: %s" % e)
             return
 
-    def _read_wkt_vertical_datum(self):
+    def _read_wkt_vertical_datum(self) -> None:
         """ attempts to read the WKT vertical datum string """
 
         try:
@@ -308,7 +308,7 @@ class Meta:
             logger.warning("unable to read the WKT vertical datum string: %s" % e)
             return
 
-    def _read_bbox(self):
+    def _read_bbox(self) -> None:
         """ attempts to read the bounding box values """
 
         try:
@@ -364,7 +364,7 @@ class Meta:
             logger.warning("unable to read the bbox's latitude values: %s" % e)
             return
 
-    def _read_abstract(self):
+    def _read_abstract(self) -> None:
         """ attempts to read the abstract string """
 
         try:
@@ -388,7 +388,7 @@ class Meta:
             logger.warning("unable to read the abstract string: %s" % e)
             return
 
-    def _read_date(self):
+    def _read_date(self) -> None:
         """ attempts to read the date string """
 
         ret = self.xml_tree.xpath('//*/gmd:CI_Date/gmd:date/gco:Date',
@@ -426,7 +426,7 @@ class Meta:
         else:
             self.date = tm_date
 
-    def _read_survey_start_date(self):
+    def _read_survey_start_date(self) -> None:
         """ attempts to read the survey date strings """
 
         try:
@@ -471,7 +471,7 @@ class Meta:
 
         # logger.debug('start: %s' % self.survey_start_date)
 
-    def _read_survey_end_date(self):
+    def _read_survey_end_date(self) -> None:
         """ attempts to read the survey date strings """
 
         try:
@@ -514,7 +514,7 @@ class Meta:
 
         # logger.debug('end: %s' % self.survey_end_date)
 
-    def _read_uncertainty_type(self):
+    def _read_uncertainty_type(self) -> None:
         """ attempts to read the uncertainty type """
         old_format = False
 
@@ -544,7 +544,7 @@ class Meta:
             logger.warning("unable to read the uncertainty type attribute: %s" % e)
             return
 
-    def _read_security_constraints(self):
+    def _read_security_constraints(self) -> None:
         """ attempts to read the uncertainty type """
         old_format = False
 

@@ -1,5 +1,5 @@
-HydrOffice BAG Tools
-====================
+HydrOffice BAG
+==============
 
 .. image:: https://github.com/hydroffice/hyo2_bag/raw/master/hyo2/bag/media/favicon.png
     :alt: logo
@@ -44,7 +44,12 @@ General Info
 HydrOffice is a research development environment for ocean mapping. It provides a collection of hydro-packages, each of them dealing with a specific issue of the field.
 The main goal is to speed up both algorithms testing and research-2-operation.
 
-The BAG Tools hydro-package collects tools for working with BAG files. BAG is a data format by the `ONS-WG <http://www.opennavsurf.org/>`_ (Open Navigation Surface Working Group).
+The BAG package collects tools for working with `Bathymetric Attributed Grid (BAG) <https://en.wikipedia.org/wiki/Bathymetric_attributed_grid>`_ files.
+The BAG package is used in `BAG Explorer <https://www.hydroffice.org/bag/main>`_ to explore BAG data files.
+
+.. note::
+   BAG is a data format developed and maintained by the `Open Navigation Surface Working Group <http://www.opennavsurf.org/>`_.
+   For the official reference implementation, go to `https://github.com/OpenNavigationSurface/BAG <https://github.com/OpenNavigationSurface/BAG>`_
 
 
 Dependencies
@@ -52,7 +57,7 @@ Dependencies
 
 For the BAG library, you will need:
 
-* ``python`` *[>=3.5]*
+* ``python`` *[>=3.8]*
 * ``numpy``
 * ``h5py``
 * ``lxml``
