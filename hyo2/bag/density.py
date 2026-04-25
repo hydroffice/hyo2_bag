@@ -1,23 +1,25 @@
-import os
 import logging
+import os
+
 import numpy as np
-
 from osgeo import gdal, osr
-from .meta import Meta
-from .helper import BAGError
-from .bag import BAGFile
 
+# noinspection PyUnresolvedReferences
+from hyo2.bag.bag import BAGFile
+# noinspection PyUnresolvedReferences
+from hyo2.bag.helper import BAGError
+# noinspection PyUnresolvedReferences
+from hyo2.bag.meta import Meta
 
 logger = logging.getLogger(__name__)
 gdal.UseExceptions()
 
 
-class Density2Gdal(object):
-
+class Density2Gdal:
     formats = {
-        'ascii': [b"AAIGrid", "bag.leidos.density.asc"],
-        'geotiff': [b"GTiff", "bag.leidos.density.tif"],
-        'xyz': [b"XYZ", "bag.leidos.density.xyz"],
+        'ascii': (b"AAIGrid", "bag.leidos.density.asc"),
+        'geotiff': (b"GTiff", "bag.leidos.density.tif"),
+        'xyz': (b"XYZ", "bag.leidos.density.xyz"),
     }
 
     def __init__(self, bag_density: np.ndarray, bag_meta: Meta, fmt="geotiff", out_file=None, epsg=None):

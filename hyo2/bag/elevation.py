@@ -1,27 +1,30 @@
-import os
 import logging
+import os
 
-import numpy as np
+# noinspection PyUnresolvedReferences
+from numpy.typing import NDArray
 from osgeo import gdal, osr
 
-from hyo2.bag.meta import Meta
-from hyo2.bag.helper import BAGError
+# noinspection PyUnresolvedReferences
 from hyo2.bag.bag import BAGFile
-
+# noinspection PyUnresolvedReferences
+from hyo2.bag.helper import BAGError
+# noinspection PyUnresolvedReferences
+from hyo2.bag.meta import Meta
 
 logger = logging.getLogger(__name__)
 gdal.UseExceptions()
 
 
 class Elevation2Gdal:
-
     formats = {
-        'ascii': ["AAIGrid", "bag.elevation.asc"],
-        'geotiff': ["GTiff", "bag.elevation.tif"],
-        'xyz': ["XYZ", "bag.elevation.xyz"],
+        'ascii': ("AAIGrid", "bag.elevation.asc"),
+        'geotiff': ("GTiff", "bag.elevation.tif"),
+        'xyz': ("XYZ", "bag.elevation.xyz"),
     }
 
-    def __init__(self, bag_elevation: np.ndarray, bag_meta: Meta, fmt="geotiff", out_file=None, epsg=None):
+    def __init__(self, bag_elevation: NDArray, bag_meta: Meta, fmt: str = "geotiff", out_file: str | None = None,
+                 epsg: int | None = None):
         """Export the elevation layer in one of the listed formats"""
         self.bag_elv = bag_elevation
         self.bag_meta = bag_meta

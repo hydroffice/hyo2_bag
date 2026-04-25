@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -18,30 +18,30 @@ class BAGError(Exception):
         Exception.__init__(self, message, *args)
 
 
-class Helper(object):
+class Helper:
     @classmethod
-    def samples_folder(cls):
-        samples_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "samples"))
+    def samples_folder(cls) -> str:
+        samples_dir = os.path.abspath(os.path.join(str(os.path.dirname(__file__)), "samples"))
         if not os.path.exists(samples_dir):
             raise BAGError("unable to find the samples folder: %s" % samples_dir)
         return samples_dir
 
     @classmethod
-    def iso19139_folder(cls):
-        iso_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "iso19139"))
+    def iso19139_folder(cls) -> str:
+        iso_dir = os.path.abspath(os.path.join(str(os.path.dirname(__file__)), "iso19139"))
         if not os.path.exists(iso_dir):
             raise BAGError("unable to find the iso19139 folder: %s" % iso_dir)
         return iso_dir
 
     @classmethod
-    def iso19757_3_folder(cls):
-        iso_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "iso19757-3"))
+    def iso19757_3_folder(cls) -> str:
+        iso_dir = os.path.abspath(os.path.join(str(os.path.dirname(__file__)), "iso19757-3"))
         if not os.path.exists(iso_dir):
             raise BAGError("unable to find the iso19757-3 folder: %s" % iso_dir)
         return iso_dir
 
     @staticmethod
-    def elide(input_str, max_len=255):
+    def elide(input_str: str, max_len: int = 255) -> str:
         """ only in case the passed string is longer than 'max_len', it applies elision """
         if len(input_str) > max_len:
             return input_str[:max_len] + "[..]"

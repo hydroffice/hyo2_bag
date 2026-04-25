@@ -1,13 +1,19 @@
-import os
 import logging
-from typing import Tuple
+import os
 
-from osgeo import osr
-import numpy as np
 from lxml import etree, isoschematron
+from numpy import uint32, float32, nan, nanmin, nanmax, isnan, argwhere, isfinite, dtype
+# noinspection PyUnresolvedReferences
+from numpy.typing import NDArray
+from osgeo import osr
 
-from hyo2.bag.base import is_bag, File
+# noinspection PyUnresolvedReferences
+from hyo2.bag.bag_paths import BAGPaths
+# noinspection PyUnresolvedReferences
+from hyo2.bag.base import File
+# noinspection PyUnresolvedReferences
 from hyo2.bag.helper import BAGError, Helper
+# noinspection PyUnresolvedReferences
 from hyo2.bag.meta import Meta
 
 logger = logging.getLogger(__name__)
@@ -16,107 +22,129 @@ logger = logging.getLogger(__name__)
 class BAGFile(File):
     """ Represents a BAG file. """
 
-    _bag_root = "BAG_root"
-    _bag_version_tag = "Bag Version"
-    _bag_version_number = b'1.6.3'
-    _bag_elevation = "BAG_root/elevation"
-    _bag_elevation_min_ev = "Minimum Elevation Value"
-    _bag_elevation_max_ev = "Maximum Elevation Value"
-    _bag_metadata = "BAG_root/metadata"
-    _bag_tracking_list = "BAG_root/tracking_list"
-    _bag_tracking_list_len = "Tracking List Length"
-    _bag_tracking_list_type = np.dtype([('row', np.uint32), ('col', np.uint32),
-                                        ('depth', np.float32), ('uncertainty', np.float32),
-                                        ('track_code', np.byte), ('list_series', np.uint16)])
-    _bag_uncertainty = "BAG_root/uncertainty"
-    _bag_uncertainty_min_uv = "Minimum Uncertainty Value"
-    _bag_uncertainty_max_uv = "Maximum Uncertainty Value"
-    _bag_elevation_solution = "BAG_root/elevation_solution"
-
-    _bag_varres_metadata = "BAG_root/varres_metadata"
-    _bag_varres_refinements = "BAG_root/varres_refinements"
-    _bag_varres_tracking_list = "BAG_root/varres_tracking_list"
+    paths = BAGPaths()
 
     BAG_NAN = 1000000
 
     default_metadata_file = "BAG_metadata.xml"
 
-    def __init__(self, name, mode='r', driver=None,
-                 libver=None, userblock_size=None, swmr=False, **kwds):
-        """
-        Create a new file object.
+    official_versions = (
+        b'1.0.0',
+        b'1.0.1',
+        b'1.1.0',
+        b'1.2.0',
+        b'1.3.0',
+        b'1.4.0',
+        b'1.5.0',
+        b'1.5.2',
+        b'1.5.3',
+        b'1.6.0',
+        b'1.6.1',
+        b'1.6.2',
+        b'1.6.3',
+        b'2.0.1',
+        b'2.0.2',
+        b'2.0.3',
+        b'2.0.4',
+        b'2.0.5',
+    )
 
-        See the low level bag.File for a detailed explanation of the options.
-        """
-        if mode is not None:
-            if 'w' not in mode:
-                if not is_bag(name):
-                    raise BAGError("The passed file %s is not a BAG file")
+    def __init__(self, name: str, mode: str = 'r', driver: str | None = None, userblock_size=None, swmr=False, **kwds):
 
-        super(BAGFile, self).__init__(name=name, mode=mode, driver=driver,
-                                      libver=libver, userblock_size=userblock_size, swmr=swmr, **kwds)
+        if 'w' not in mode and not BAGFile.is_bag(bag_path=name, advanced=True):
+            raise BAGError("The passed file %s is not a BAG file")
 
-        self.meta = None
-        self.meta_errors = list()
-        self._str = None
+        super().__init__(name=name, mode=mode, driver=driver, userblock_size=userblock_size, swmr=swmr,
+                         **kwds)
+
+        self.bag_path = name
+        self._meta: Meta | None = None
+        self.meta_errors: list[str] = list()
+        self._str: str | None = None
+
+    @property
+    def meta(self) -> Meta:
+        if self._meta is None:
+            raise RuntimeError("First load metadata")
+        return self._meta
 
     @classmethod
     def is_bag(cls, bag_path: str, advanced: bool = False) -> bool:
-        if not advanced:
-            return os.path.splitext(bag_path)[-1].lower() == ".bag"
+        file_ext = os.path.splitext(bag_path)[-1]
+        if file_ext.lower() != ".bag":
+            logger.info("The passed file has not the bag extension: %s" % file_ext)
+            return False
 
-        raise RuntimeError("Not implemented")
+        if not advanced:
+            return True
+
+        return File.is_bag(bag_path)
 
     @classmethod
-    def is_vr(cls, bag_path: str, advanced: bool = False) -> bool:
-        if not advanced:
-            return BAGFile(bag_path).has_varres_refinements()
-
-        raise RuntimeError("Not implemented")
+    def is_vr(cls, bag_path: str) -> bool:
+        return BAGFile(bag_path).has_varres_refinements()
 
     @classmethod
-    def create_template(cls, name):
-        """ create a BAG file with empty template structure """
-        logger.debug("create new BAG file: %s" % name)
+    def create_template(cls, name: str) -> File:
+        """ create a BAG file with empty SR template structure """
+
+        logger.debug("create new BAG file: %s ..." % name)
+
         try:
             new_bag = File(name, 'w')
-            new_bag.create_group(cls._bag_root)
-            new_bag.attrs.create(cls._bag_version_tag, cls._bag_version_number, shape=(), dtype="S5")
+            new_bag.create_group(cls.paths.bag_root)
+            new_bag.attrs.create(cls.paths.bag_root_version_tag, cls.paths.bag_default_version_number, shape=(),
+                                 dtype="S5")
 
-            elevation = new_bag.create_dataset(cls._bag_elevation, shape=(), dtype=np.float32)
-            elevation.attrs.create(cls._bag_elevation_min_ev, 0.0, shape=(), dtype=np.float32)
-            elevation.attrs.create(cls._bag_elevation_max_ev, 0.0, shape=(), dtype=np.float32)
+            elevation = new_bag.create_dataset(cls.paths.bag_elevation, shape=(), dtype=float32)
+            elevation.attrs.create(cls.paths.bag_elevation_min_value_tag, 0.0, shape=(), dtype=float32)
+            elevation.attrs.create(cls.paths.bag_elevation_max_value_tag, 0.0, shape=(), dtype=float32)
 
-            new_bag.create_dataset(cls._bag_metadata, shape=(1,), dtype="S1")
+            new_bag.create_dataset(cls.paths.bag_metadata, shape=(1,), dtype="S1")
 
-            tracking_list = new_bag.create_dataset(cls._bag_tracking_list, shape=(), dtype=cls._bag_tracking_list_type)
-            tracking_list.attrs.create(cls._bag_tracking_list_len, 0, shape=(), dtype=np.uint32)
+            tracking_list = new_bag.create_dataset(cls.paths.bag_tracking_list, shape=(),
+                                                   dtype=cls.paths.bag_tracking_list_type)
+            tracking_list.attrs.create(cls.paths.bag_tracking_list_len_tag, 0, shape=(), dtype=uint32)
 
-            uncertainty = new_bag.create_dataset(cls._bag_uncertainty, shape=(), dtype=np.float32)
-            uncertainty.attrs.create(cls._bag_uncertainty_min_uv, 0.0, shape=(), dtype=np.float32)
-            uncertainty.attrs.create(cls._bag_uncertainty_max_uv, 0.0, shape=(), dtype=np.float32)
+            uncertainty = new_bag.create_dataset(cls.paths.bag_uncertainty, shape=(), dtype=float32)
+            uncertainty.attrs.create(cls.paths.bag_uncertainty_min_value_tag, 0.0, shape=(), dtype=float32)
+            uncertainty.attrs.create(cls.paths.bag_uncertainty_max_value_tag, 0.0, shape=(), dtype=float32)
 
         except (BAGError, OSError) as e:
             raise BAGError("Unable to create the BAG file %s: %s" % (name, e))
 
+        logger.debug("create new BAG file: %s ... DONE" % name)
+
         return new_bag
 
-    def has_bag_root(self):
-        return self._bag_root in self
+    @classmethod
+    def ensure_bytes(cls, value: bytes | str, encoding: str = "utf-8") -> bytes:
+        if isinstance(value, bytes):
+            return value
+        return value.encode(encoding)
 
-    def has_bag_version(self):
-        return self._bag_version_tag in self[self._bag_root].attrs
+    def has_bag_root(self) -> bool:
+        return self.paths.bag_root in self
+
+    def has_bag_version(self) -> bool:
+        return self.paths.bag_root_version_tag in self[self.paths.bag_root].attrs
 
     def bag_version(self) -> str:
-        return self[self._bag_root].attrs[self._bag_version_tag]
+        return self[self.paths.bag_root].attrs[self.paths.bag_root_version_tag]
 
-    def has_metadata(self):
-        return BAGFile._bag_metadata in self
+    def has_official_bag_version(self) -> bool:
+        return self.bag_version() in self.official_versions
 
-    def has_elevation(self):
-        return BAGFile._bag_elevation in self
+    def has_metadata(self) -> bool:
+        return self.paths.bag_metadata in self
 
-    def elevation(self, mask_nan=True, row_range=None):
+    def has_elevation(self) -> bool:
+        return self.paths.bag_elevation in self
+
+    def elevation_shape(self) -> tuple[int, int]:
+        return self[self.paths.bag_elevation].shape
+
+    def elevation(self, mask_nan: bool = True, row_range: slice | None = None) -> NDArray:
         """
         Return the elevation as numpy array
 
@@ -135,22 +163,19 @@ class BAGFile(File):
 
         if mask_nan:
             if row_range:
-                el = self[BAGFile._bag_elevation][row_range]
+                el = self[self.paths.bag_elevation][row_range]
             else:
-                el = self[BAGFile._bag_elevation][:]
+                el = self[self.paths.bag_elevation][:]
             mask = el == BAGFile.BAG_NAN
-            el[mask] = np.nan
+            el[mask] = nan
             return el
 
         if row_range:
-            return self[BAGFile._bag_elevation][row_range]
+            return self[self.paths.bag_elevation][row_range]
         else:
-            return self[BAGFile._bag_elevation][:]
+            return self[self.paths.bag_elevation][:]
 
-    def elevation_shape(self):
-        return self[BAGFile._bag_elevation].shape
-
-    def elevation_min_max(self) -> Tuple[float, float]:
+    def elevation_min_max(self) -> tuple[float, float]:
         rows, cols = self.elevation_shape()
         # logger.debug('shape: %s, %s' % (rows, cols))
 
@@ -161,21 +186,21 @@ class BAGFile(File):
         chunk_rows = int(chunk_size / mem_row) + 1
         # logger.debug('nr of rows per chunk: %s' % chunk_rows)
 
-        elv_min = np.nan
-        elv_max = np.nan
+        elv_min = nan
+        elv_max = nan
         for start in range(0, rows, chunk_rows):
             stop = start + chunk_rows
             if stop > rows:
                 stop = rows
             # logger.debug('slice: %s-%s' % (start, stop))
-            _min = np.nanmin(self.elevation(row_range=slice(start, stop)))
-            if np.isnan(elv_min):
+            _min = nanmin(self.elevation(row_range=slice(start, stop)))
+            if isnan(elv_min):
                 elv_min = _min
             else:
                 if _min < elv_min:
                     elv_min = _min
-            _max = np.nanmax(self.elevation(row_range=slice(start, stop)))
-            if np.isnan(elv_max):
+            _max = nanmax(self.elevation(row_range=slice(start, stop)))
+            if isnan(elv_max):
                 elv_max = _max
             else:
                 if _max > elv_max:
@@ -183,47 +208,35 @@ class BAGFile(File):
 
         return elv_min, elv_max
 
-    def depth_min_max(self) -> Tuple[float, float]:
+    def depth_min_max(self) -> tuple[float, float]:
         elv_min, elv_max = self.elevation_min_max()
         return -elv_max, -elv_min
 
-    def vr_refinements_shape(self):
-        return self[BAGFile._bag_varres_refinements].shape
+    def vr_refinements_shape(self) -> tuple[int, int]:
+        return self[self.paths.bag_varres_refinements].shape
 
-    def vr_elevation_min_max(self) -> Tuple[float, float]:
-        # rows, cols = self.vr_refinements_shape()
-        # logger.debug('refinements shape: %s, %s' % (rows, cols))
+    def vr_elevation_min_max(self) -> tuple[float, float]:
 
-        vr_el = self[BAGFile._bag_varres_refinements][0]['depth']
+        vr_el = self[self.paths.bag_varres_refinements][0]['depth']
         mask = vr_el == BAGFile.BAG_NAN
-        vr_el[mask] = np.nan
+        vr_el[mask] = nan
 
-        # logger.debug(vr_el)
+        return nanmin(vr_el), nanmax(vr_el)
 
-        return np.nanmin(vr_el), np.nanmax(vr_el)
-
-    def vr_depth_min_max(self) -> Tuple[float, float]:
+    def vr_depth_min_max(self) -> tuple[float, float]:
         elv_min, elv_max = self.vr_elevation_min_max()
         return -elv_max, -elv_min
 
-    def has_uncertainty(self):
-        return BAGFile._bag_uncertainty in self
+    def has_uncertainty(self) -> bool:
+        return self.paths.bag_uncertainty in self
 
-    def has_product_uncertainty(self):
+    def has_product_uncertainty(self) -> bool:
         if self.has_uncertainty() and \
                 (self.meta.unc_type == "productUncert" or self.meta.unc_type == "ProductUncert"):  # Leidos bug
             return True
         return False
 
-    def uncertainty(self, mask_nan=True, row_range=None):
-        """
-        Return the uncertainty as numpy array
-
-        mask_nan
-            If True, apply a mask using the BAG nan value
-        row_range
-            If present, a slice of rows to read from
-        """
+    def uncertainty(self, mask_nan: bool = True, row_range: slice | None = None) -> NDArray:
         if row_range:
             if not isinstance(row_range, slice):
                 raise BAGError("Invalid type of slice selector: %s" % type(row_range))
@@ -234,22 +247,22 @@ class BAGFile(File):
 
         if mask_nan:
             if row_range:
-                un = self[BAGFile._bag_uncertainty][row_range]
+                un = self[self.paths.bag_uncertainty][row_range]
             else:
-                un = self[BAGFile._bag_uncertainty][:]
+                un = self[self.paths.bag_uncertainty][:]
             mask = un == BAGFile.BAG_NAN
-            un[mask] = np.nan
+            un[mask] = nan
             return un
 
         if row_range:
-            return self[BAGFile._bag_uncertainty][row_range]
+            return self[self.paths.bag_uncertainty][row_range]
         else:
-            return self[BAGFile._bag_uncertainty][:]
+            return self[self.paths.bag_uncertainty][:]
 
-    def uncertainty_shape(self):
-        return self[BAGFile._bag_uncertainty].shape
+    def uncertainty_shape(self) -> tuple[int, int]:
+        return self[self.paths.bag_uncertainty].shape
 
-    def uncertainty_min_max(self) -> Tuple[float, float]:
+    def uncertainty_min_max(self) -> tuple[float, float]:
         rows, cols = self.uncertainty_shape()
         # logger.debug('shape: %s, %s' % (rows, cols))
 
@@ -260,21 +273,21 @@ class BAGFile(File):
         chunk_rows = int(chunk_size / mem_row) + 1
         # logger.debug('nr of rows per chunk: %s' % chunk_rows)
 
-        unc_min = np.nan
-        unc_max = np.nan
+        unc_min = nan
+        unc_max = nan
         for start in range(0, rows, chunk_rows):
             stop = start + chunk_rows
             if stop > rows:
                 stop = rows
             # logger.debug('slice: %s-%s' % (start, stop))
-            _min = np.nanmin(self.uncertainty(row_range=slice(start, stop)))
-            if np.isnan(unc_min):
+            _min = nanmin(self.uncertainty(row_range=slice(start, stop)))
+            if isnan(unc_min):
                 unc_min = _min
             else:
                 if _min < unc_min:
                     unc_min = _min
-            _max = np.nanmax(self.uncertainty(row_range=slice(start, stop)))
-            if np.isnan(unc_max):
+            _max = nanmax(self.uncertainty(row_range=slice(start, stop)))
+            if isnan(unc_max):
                 unc_max = _max
             else:
                 if _max > unc_max:
@@ -317,7 +330,7 @@ class BAGFile(File):
                 stop = rows
 
             unc = self.uncertainty(row_range=slice(start, stop))
-            ijs = np.argwhere(unc > th)
+            ijs = argwhere(unc > th)
             for ij in ijs:
                 i = ij[0]
                 j = ij[1]
@@ -368,9 +381,9 @@ class BAGFile(File):
             # logger.info("unc: %d, %d" % (np.isnan(unc).sum(), np.isfinite(unc).sum()))
             dep = self.elevation(row_range=slice(start, stop))
             # logger.info("dep: %d, %d" % (np.isnan(dep).sum(), np.isfinite(dep).sum()))
-            unc[np.isfinite(dep)] = np.nan
+            unc[isfinite(dep)] = nan
             # logger.info(unc)
-            ijs = np.argwhere(np.isfinite(unc))
+            ijs = argwhere(isfinite(unc))
             # logger.info(ijs)
             for ij in ijs:
                 i = ij[0]
@@ -422,9 +435,9 @@ class BAGFile(File):
             # logger.info(unc)
             dep = self.elevation(row_range=slice(start, stop))
             # logger.info(dep)
-            dep[np.isfinite(unc)] = np.nan
+            dep[isfinite(unc)] = nan
             # logger.info(dep)
-            ijs = np.argwhere(np.isfinite(dep))
+            ijs = argwhere(isfinite(dep))
             # logger.info(ijs)
             for ij in ijs:
                 i = ij[0]
@@ -438,17 +451,17 @@ class BAGFile(File):
 
         return xyz
 
-    def vr_uncertainty_min_max(self) -> Tuple[float, float]:
+    def vr_uncertainty_min_max(self) -> tuple[float, float]:
         # rows, cols = self.vr_refinements_shape()
         # logger.debug('shape: %s, %s' % (rows, cols))
 
-        vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
+        vr_unc = self[self.paths.bag_varres_refinements][0]['depth_uncrt']
         mask = vr_unc == BAGFile.BAG_NAN
-        vr_unc[mask] = np.nan
+        vr_unc[mask] = nan
 
         # logger.debug(vr_el)
 
-        return np.nanmin(vr_unc), np.nanmax(vr_unc)
+        return nanmin(vr_unc), nanmax(vr_unc)
 
     def vr_uncertainty_greater_than(self, th: float) -> list[list[int | float]]:
         # rows, cols = self.vr_refinements_shape()
@@ -471,9 +484,9 @@ class BAGFile(File):
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ctr = osr.CoordinateTransformation(in_srs, out_srs)
 
-        vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
+        vr_unc = self[self.paths.bag_varres_refinements][0]['depth_uncrt']
         mask = vr_unc == BAGFile.BAG_NAN
-        vr_unc[mask] = np.nan
+        vr_unc[mask] = nan
 
         xyz_dict = dict()
         for idx, unc in enumerate(vr_unc):
@@ -483,7 +496,7 @@ class BAGFile(File):
         # logger.info("Located %d outliers" % len(xyz_dict))
 
         xyz = list()
-        vr_ixs = self[BAGFile._bag_varres_metadata][:]
+        vr_ixs = self[self.paths.bag_varres_metadata][:]
         rows, cols = vr_ixs.shape
         i = 0
         for sg_r in range(rows):
@@ -530,23 +543,23 @@ class BAGFile(File):
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ctr = osr.CoordinateTransformation(in_srs, out_srs)
 
-        vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
+        vr_unc = self[self.paths.bag_varres_refinements][0]['depth_uncrt']
         mask = vr_unc == BAGFile.BAG_NAN
-        vr_unc[mask] = np.nan
-        vr_dep = self[BAGFile._bag_varres_refinements][0]['depth']
+        vr_unc[mask] = nan
+        vr_dep = self[self.paths.bag_varres_refinements][0]['depth']
         mask = vr_dep == BAGFile.BAG_NAN
-        vr_dep[mask] = np.nan
+        vr_dep[mask] = nan
 
         xyz_dict = dict()
         for idx, unc in enumerate(vr_unc):
             dep = vr_dep[idx]
-            if np.isfinite(dep) and np.isnan(unc):
+            if isfinite(dep) and isnan(unc):
                 xyz_dict[idx] = dep
 
         # logger.info("Located %d outliers" % len(xyz_dict))
 
         xyz = list()
-        vr_ixs = self[BAGFile._bag_varres_metadata][:]
+        vr_ixs = self[self.paths.bag_varres_metadata][:]
         rows, cols = vr_ixs.shape
         i = 0
         for sg_r in range(rows):
@@ -593,23 +606,23 @@ class BAGFile(File):
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ctr = osr.CoordinateTransformation(in_srs, out_srs)
 
-        vr_unc = self[BAGFile._bag_varres_refinements][0]['depth_uncrt']
+        vr_unc = self[self.paths.bag_varres_refinements][0]['depth_uncrt']
         mask = vr_unc == BAGFile.BAG_NAN
-        vr_unc[mask] = np.nan
-        vr_dep = self[BAGFile._bag_varres_refinements][0]['depth']
+        vr_unc[mask] = nan
+        vr_dep = self[self.paths.bag_varres_refinements][0]['depth']
         mask = vr_dep == BAGFile.BAG_NAN
-        vr_dep[mask] = np.nan
+        vr_dep[mask] = nan
 
         xyz_dict = dict()
         for idx, unc in enumerate(vr_unc):
             dep = vr_dep[idx]
-            if np.isfinite(unc) and np.isnan(dep):
+            if isfinite(unc) and isnan(dep):
                 xyz_dict[idx] = unc
 
         # logger.info("Located %d outliers" % len(xyz_dict))
 
         xyz = list()
-        vr_ixs = self[BAGFile._bag_varres_metadata][:]
+        vr_ixs = self[self.paths.bag_varres_metadata][:]
         rows, cols = vr_ixs.shape
         i = 0
         for sg_r in range(rows):
@@ -635,15 +648,15 @@ class BAGFile(File):
 
         return xyz
 
-    def has_density(self):
+    def has_density(self) -> bool:
         # noinspection PyBroadException
         try:
-            self[BAGFile._bag_elevation_solution]['num_soundings']
+            self[self.paths.bag_elevation_solution]['num_soundings']
         except Exception:
             return False
         return True
 
-    def density(self, mask_nan=True, row_range=None):
+    def density(self, mask_nan: bool = True, row_range: slice | None = None) -> NDArray:
         """
         Return the density as numpy array
 
@@ -662,40 +675,40 @@ class BAGFile(File):
 
         if mask_nan:
             if row_range:
-                de = self[BAGFile._bag_elevation_solution]['num_soundings'][row_range]
+                de = self[self.paths.bag_elevation_solution]['num_soundings'][row_range]
             else:
-                de = self[BAGFile._bag_elevation_solution]['num_soundings'][:]
+                de = self[self.paths.bag_elevation_solution]['num_soundings'][:]
             de = de.astype(float)
             mask = de == BAGFile.BAG_NAN
-            de[mask] = np.nan
+            de[mask] = nan
             return de
 
         if row_range:
-            de = self[BAGFile._bag_elevation_solution]['num_soundings'][row_range]
+            de = self[self.paths.bag_elevation_solution]['num_soundings'][row_range]
         else:
-            de = self[BAGFile._bag_elevation_solution]['num_soundings'][:]
+            de = self[self.paths.bag_elevation_solution]['num_soundings'][:]
         de = de.astype(float)
         return de
 
-    def density_shape(self):
-        return self[BAGFile._bag_elevation_solution].shape
+    def density_shape(self) -> tuple[int, int]:
+        return self[self.paths.bag_elevation_solution].shape
 
-    def has_tracking_list(self):
-        return BAGFile._bag_tracking_list in self
+    def has_tracking_list(self) -> bool:
+        return self.paths.bag_tracking_list in self
 
-    def tracking_list(self):
+    def tracking_list(self) -> NDArray:
         """ Return the tracking list as numpy array """
-        return self[BAGFile._bag_tracking_list][:]
+        return self[self.paths.bag_tracking_list][:]
 
-    def tracking_list_fields(self):
+    def tracking_list_fields(self) -> tuple[str, ...]:
         """ Return the tracking list field names """
-        return self[BAGFile._bag_tracking_list].dtype.names
+        return self[self.paths.bag_tracking_list].dtype.names
 
-    def tracking_list_types(self):
+    def tracking_list_types(self) -> dtype:
         """ Return the tracking list field names """
-        return self[BAGFile._bag_tracking_list].dtype
+        return self[self.paths.bag_tracking_list].dtype
 
-    def has_valid_row_in_tracking_list(self):
+    def has_valid_row_in_tracking_list(self) -> bool:
         rows, _ = self.elevation_shape()
         # logger.info('rows: %s, cols: %s' % (rows, _))
 
@@ -707,7 +720,7 @@ class BAGFile(File):
 
         return True
 
-    def has_valid_col_in_tracking_list(self):
+    def has_valid_col_in_tracking_list(self) -> bool:
         rows, cols = self.elevation_shape()
         # logger.info('rows: %s, cols: %s' % (rows, cols))
 
@@ -727,10 +740,12 @@ class BAGFile(File):
         as_pretty_xml
             If True, return the xml in a pretty format as bytes
         """
-        xml_bytes = self[BAGFile._bag_metadata][:].tostring().strip(b'\x00')
+        xml_bytes = self[self.paths.bag_metadata][:].tostring().strip(b'\x00')
 
         if as_pretty_xml:
+            # noinspection PyUnresolvedReferences
             xml_tree = etree.fromstring(xml_bytes)
+            # noinspection PyUnresolvedReferences
             pretty_bytes = etree.tostring(xml_tree, pretty_print=True)
             if as_string:
                 return pretty_bytes.decode()
@@ -740,7 +755,7 @@ class BAGFile(File):
                 return xml_bytes.decode()
             return xml_bytes
 
-    def extract_metadata(self, name=None):
+    def extract_metadata(self, name: str = None) -> None:
         """ Save metadata on disk
 
         name
@@ -752,13 +767,15 @@ class BAGFile(File):
             logger.info("unable to access the metadata")
             return
 
+        meta_xml: bytes
+
         if name is None:
             name = os.path.join(self.default_metadata_file)
 
         with open(os.path.abspath(name), 'w') as fid:
             fid.write(meta_xml.decode())
 
-    def substitute_metadata(self, path):
+    def substitute_metadata(self, path: str) -> None:
         """ Substitute internal metadata
 
         name
@@ -778,9 +795,9 @@ class BAGFile(File):
             logger.info("the passed metadata file is not valid")
             return
 
-        del self[BAGFile._bag_metadata]
+        del self[self.paths.bag_metadata]
         xml_sz = len(xml_string)
-        ds = self.create_dataset(self._bag_metadata, (xml_sz,), dtype="S1")
+        ds = self.create_dataset(self.paths.bag_metadata, (xml_sz,), dtype="S1")
         for i, bt in enumerate(xml_string):
             ds[i] = bytes([bt])
 
@@ -792,24 +809,30 @@ class BAGFile(File):
         is_valid = True
 
         if xml_string is None:
-            xml_string = self.metadata(as_pretty_xml=True)
+            xml_string = self.ensure_bytes(self.metadata(as_pretty_xml=True))
 
+        # noinspection PyUnresolvedReferences
         try:
+            # noinspection PyUnresolvedReferences
             xml_tree = etree.fromstring(xml_string)
         except etree.Error as e:
             logger.warning("unable to parse XML metadata: %s" % e)
             self.meta_errors.append(e)
             return False
 
+        # noinspection PyUnresolvedReferences
         try:
             schema_path = os.path.join(Helper.iso19139_folder(), 'bag', 'bag.xsd')
+            # noinspection PyUnresolvedReferences
             schema_doc = etree.parse(schema_path)
+            # noinspection PyUnresolvedReferences
             schema = etree.XMLSchema(schema_doc)
         except etree.Error as e:
             logger.warning("unable to parse XML schema: %s" % e)
             self.meta_errors.append(e)
             return False
 
+        # noinspection PyUnresolvedReferences
         try:
             schema.assertValid(xml_tree)
         except etree.DocumentInvalid as e:
@@ -822,14 +845,17 @@ class BAGFile(File):
         if is_valid:
             logger.debug("xsd validated")
 
+        # noinspection PyUnresolvedReferences
         try:
             schematron_path = os.path.join(Helper.iso19757_3_folder(), 'bag_metadata_profile.sch')
+            # noinspection PyUnresolvedReferences
             schematron_doc = etree.parse(schematron_path)
         except etree.DocumentInvalid as e:
             logger.warning("unable to parse BAG schematron: %s" % e)
             self.meta_errors.append(e)
             return False
 
+        # noinspection PyUnresolvedReferences
         try:
             schematron = isoschematron.Schematron(schematron_doc, store_report=True)
         except etree.DocumentInvalid as e:
@@ -842,10 +868,12 @@ class BAGFile(File):
         else:
             logger.warning("invalid metadata based on Schematron")
             is_valid = False
+            # noinspection HttpUrlsUsage
             ns = {
                 'svrl': 'http://purl.oclc.org/dsdl/svrl',
             }
             for i in schematron.error_log:
+                # noinspection PyUnresolvedReferences
                 err_tree = etree.fromstring(i.message)
                 # print(etree.tostring(err_tree, pretty_print=True))
                 err_msg = err_tree.xpath('/svrl:failed-assert/svrl:text', namespaces=ns)[0].text.strip()
@@ -854,11 +882,11 @@ class BAGFile(File):
 
         return is_valid
 
-    def validation_info(self):
+    def validation_info(self) -> str:
         """ Return a message string with the result of the validation """
         msg = str()
 
-        msg += "XML input source: %s\nValidation output: " % self._bag_metadata
+        msg += "XML input source: %s\nValidation output: " % self.paths.bag_metadata
         if self.validate_metadata():
             msg += "VALID"
         else:
@@ -867,22 +895,23 @@ class BAGFile(File):
                 msg += " - %s\n" % err_msg
         return msg
 
-    def populate_metadata(self):
+    def populate_metadata(self) -> Meta:
         """ Populate metadata class """
 
-        if self.meta is not None:
+        if self._meta is not None:
             # log.debug("metadata already populated")
             return self.meta
 
-        self.meta = Meta(meta_xml=self.metadata(as_pretty_xml=True))
+        self._meta = Meta(meta_xml=self.metadata(as_pretty_xml=True), has_vr=self.is_vr(bag_path=self.bag_path))
         return self.meta
 
-    def modify_wkt_prj(self, wkt_hor, wkt_ver=None):
+    def modify_wkt_prj(self, wkt_hor: str, wkt_ver: str | None = None) -> None:
         """ Modify the wkt prj in the metadata content
 
         text
             The new wkt prj text to use
         """
+        # noinspection HttpUrlsUsage
         ns = {
             'bag': 'http://www.opennavsurf.org/schema/bag',
             'gco': 'http://www.isotc211.org/2005/gco',
@@ -892,9 +921,11 @@ class BAGFile(File):
             'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         }
 
-        # print(self[BAGFile._bag_metadata][:])
-        xml_tree = etree.fromstring(self[BAGFile._bag_metadata][:].tostring())
+        # print(self[self.paths.bag_metadata][:])
+        # noinspection PyUnresolvedReferences
+        xml_tree = etree.fromstring(self[self.paths.bag_metadata][:].tostring())
 
+        # noinspection PyUnresolvedReferences
         try:
             ret = xml_tree.xpath('//*/gmd:referenceSystemInfo/gmd:MD_ReferenceSystem/'
                                  'gmd:referenceSystemIdentifier/gmd:RS_Identifier/gmd:code/gco:CharacterString',
@@ -907,14 +938,16 @@ class BAGFile(File):
             logger.warning("unable to read the WKT projection string: %s" % e)
             return
 
+        # noinspection PyUnresolvedReferences
         new_xml = etree.tostring(xml_tree, pretty_print=True)
-        del self[BAGFile._bag_metadata]
-        ds = self.create_dataset(BAGFile._bag_metadata, shape=(len(new_xml),), dtype="S1")
+        del self[self.paths.bag_metadata]
+        ds = self.create_dataset(self.paths.bag_metadata, shape=(len(new_xml),), dtype="S1")
         for i, x in enumerate(new_xml):
             ds[i] = bytes([x])
 
-    def modify_bbox(self, west, east, south, north):
+    def modify_bbox(self, west: float, east: float, south: float, north: float) -> None:
         """ attempts to modify the bounding box values """
+        # noinspection HttpUrlsUsage
         ns = {
             'bag': 'http://www.opennavsurf.org/schema/bag',
             'gco': 'http://www.isotc211.org/2005/gco',
@@ -924,8 +957,10 @@ class BAGFile(File):
             'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         }
 
-        xml_tree = etree.fromstring(self[BAGFile._bag_metadata][:].tostring())
+        # noinspection PyUnresolvedReferences
+        xml_tree = etree.fromstring(self[self.paths.bag_metadata][:].tostring())
 
+        # noinspection PyUnresolvedReferences
         try:
             ret_x_min = xml_tree.xpath('//*/gmd:EX_GeographicBoundingBox/gmd:westBoundLongitude/gco:Decimal',
                                        namespaces=ns)
@@ -942,6 +977,7 @@ class BAGFile(File):
             logger.warning("unable to read the bbox's longitude values: %s" % e)
             return
 
+        # noinspection PyUnresolvedReferences
         try:
             ret_y_min = xml_tree.xpath('//*/gmd:EX_GeographicBoundingBox/gmd:southBoundLatitude/gco:Decimal',
                                        namespaces=ns)
@@ -958,31 +994,32 @@ class BAGFile(File):
             logger.warning("unable to read the bbox's latitude values: %s" % e)
             return
 
+        # noinspection PyUnresolvedReferences
         new_xml = etree.tostring(xml_tree, pretty_print=True)
-        del self[BAGFile._bag_metadata]
-        ds = self.create_dataset(BAGFile._bag_metadata, shape=(len(new_xml),), dtype="S1")
+        del self[self.paths.bag_metadata]
+        ds = self.create_dataset(self.paths.bag_metadata, shape=(len(new_xml),), dtype="S1")
         for i, x in enumerate(new_xml):
             ds[i] = bytes([x])
 
-    def has_varres_metadata(self):
-        return BAGFile._bag_varres_metadata in self
+    def has_varres_metadata(self) -> bool:
+        return self.paths.bag_varres_metadata in self
 
-    def has_varres_refinements(self):
-        return BAGFile._bag_varres_refinements in self
+    def has_varres_refinements(self) -> bool:
+        return self.paths.bag_varres_refinements in self
 
-    def has_varres_tracking_list(self):
-        return BAGFile._bag_varres_tracking_list in self
+    def has_varres_tracking_list(self) -> bool:
+        return self.paths.bag_varres_tracking_list in self
 
-    def _str_group_info(self, grp):
-        if grp == self._bag_root:
+    def _str_group_info(self, grp: str) -> None:
+        if grp == self.paths.bag_root:
             self._str += "  <root>\n"
-        elif grp == self._bag_elevation:
+        elif grp == self.paths.bag_elevation:
             self._str += "  <elevation shape=%s>\n" % str(self.elevation().shape)
-        elif grp == self._bag_uncertainty:
+        elif grp == self.paths.bag_uncertainty:
             self._str += "  <uncertainty shape=%s>\n" % str(self.uncertainty().shape)
-        elif grp == self._bag_tracking_list:
+        elif grp == self.paths.bag_tracking_list:
             self._str += "  <tracking list shape=%s>\n" % str(self.tracking_list().shape)
-        elif grp == self._bag_metadata:
+        elif grp == self.paths.bag_metadata:
             if self.meta is not None:
                 self._str += "  %s\n" % str(self.meta)
             else:
@@ -990,12 +1027,14 @@ class BAGFile(File):
         else:
             self._str += "  <%s>\n" % grp
 
-        if grp != self._bag_metadata:
+        if grp != self.paths.bag_metadata:
             for atr in self[grp].attrs:
                 atr_val = self[grp].attrs[atr]
                 self._str += "    <%s: %s (%s, %s)>\n" % (atr, atr_val, atr_val.shape, atr_val.dtype)
 
-    def __str__(self):
+    def __str__(self) -> str:
         self._str = super(BAGFile, self).__str__()
         self.visit(self._str_group_info)
+        if self._str is None:
+            return "[EMPTY]"
         return self._str

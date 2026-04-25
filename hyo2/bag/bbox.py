@@ -1,18 +1,20 @@
-import os
 import logging
+import os
 
 from osgeo import ogr, osr
-from hyo2.bag.meta import Meta
-from hyo2.bag.helper import BAGError, Helper
-from hyo2.bag import __version__
 
+# noinspection PyUnresolvedReferences
+from hyo2.bag import __version__
+# noinspection PyUnresolvedReferences
+from hyo2.bag.helper import BAGError, Helper
+# noinspection PyUnresolvedReferences
+from hyo2.bag.meta import Meta
 
 logger = logging.getLogger(__name__)
 ogr.UseExceptions()
 
 
-class Bbox2Gdal(object):
-
+class Bbox2Gdal:
     formats = {
         'gjs': ["GeoJSON", "bag.geojson"],
         'gml': ["GML", "bag.gml"],

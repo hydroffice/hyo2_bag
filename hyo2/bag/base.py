@@ -1,35 +1,41 @@
-import os
 import logging
+import os
 
 import h5py
+# noinspection PyProtectedMember
 from h5py._hl.base import with_phil
 
+# noinspection PyUnresolvedReferences
+from hyo2.bag.bag_paths import BAGPaths
+
 logger = logging.getLogger(__name__)
-
-
-def is_bag(file_name):
-    """ Determine if a file is valid BAG (False if it doesn't exist). """
-
-    # we first check if the file is a valid hdf5 (it also checks if the file exists)
-    if not h5py.is_hdf5(file_name):
-        return False
-
-    fid = h5py.File(file_name, 'r')
-
-    try:
-        fid["BAG_root"]
-
-    except KeyError:
-        return False
-
-    return True
 
 
 class File(h5py.File):
     """ Represents a BAG file (at low-level, thin wrapper around h5py). """
 
-    def __init__(self, name, mode: str = "r", driver=None,
-                 libver=None, userblock_size=None, swmr=False, **kwds):
+    @classmethod
+    def is_bag(cls, file_name: str) -> bool:
+        """ Determine if a file is valid BAG (False if it doesn't exist). """
+
+        # we first check if the file is a valid hdf5 (it also checks if the file exists)
+        if not h5py.is_hdf5(file_name):
+            logger.info("The passed file is not a valid hdf")
+            return False
+
+        fid = h5py.File(file_name, 'r')
+
+        try:
+            fid[BAGPaths().bag_root]
+
+        except KeyError:
+            logger.info("The passed file does not have a BAG root")
+            return False
+
+        return True
+
+    def __init__(self, name: str, mode: str = "r", driver: str | None = None,
+                 libver: str | None = None, userblock_size: int | None = None, swmr: bool = False, **kwds) -> None:
         """
         Create a new file object.
 
@@ -55,21 +61,21 @@ class File(h5py.File):
         super(File, self).__init__(name=name, mode=mode, driver=driver,
                                    libver=libver, userblock_size=userblock_size, swmr=swmr, **kwds)
 
-    def close(self):
+    def close(self) -> None:
         """ Close the file.  All open objects become invalid """
         logger.debug("closing")
         super(File, self).close()
 
-    def flush(self):
+    def flush(self) -> None:
         """ Tell the BAG library to flush its buffers. """
         logger.debug("flushing")
         super(File, self).flush()
 
     @with_phil
-    def __repr__(self):
+    def __repr__(self) -> str:
         if not self.id:
             logger.info("closed file")
-            r = '<BAG file>\n'
+            r = '<File>\n'
             r += "  <status: closed>"
         else:
             # Filename has to be forced to Unicode if it comes back bytes
@@ -77,7 +83,7 @@ class File(h5py.File):
             filename = self.filename
             if isinstance(filename, bytes):  # Can't decode fname
                 filename = filename.decode('utf8', 'replace')
-            r = '<BAG file "%s" (mode %s)>' % (os.path.basename(filename), self.mode)
+            r = '<File "%s" (mode %s)>' % (os.path.basename(filename), self.mode)
             r += "  <status: open>\n"
             r += "  <id: %s>\n" % self.id
             r += "  <name: %s>\n" % self.name

@@ -4,7 +4,6 @@ from osgeo import osr
 
 from hyo2.abc2.lib.logging import set_logging
 from hyo2.bag.bag import BAGFile
-from hyo2.bag.helper import Helper
 from hyo2.bag.meta import Meta
 
 set_logging(ns_list=['hyo2.bag'])
