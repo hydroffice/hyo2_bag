@@ -179,11 +179,11 @@ class BAGFile(File):
         rows, cols = self.elevation_shape()
         # logger.debug('shape: %s, %s' % (rows, cols))
 
-        mem_row = cols * 32 / 1024 / 1024
+        mem_row = cols * 4 / 1024 / 1024
         # mem = mem_row * rows
         # logger.debug('estimated memory: %.1f MB' % mem)
         chunk_size = 8096
-        chunk_rows = int(chunk_size / mem_row) + 1
+        chunk_rows = max(1, int(chunk_size // mem_row))
         # logger.debug('nr of rows per chunk: %s' % chunk_rows)
 
         elv_min = nan
@@ -193,13 +193,16 @@ class BAGFile(File):
             if stop > rows:
                 stop = rows
             # logger.debug('slice: %s-%s' % (start, stop))
-            _min = nanmin(self.elevation(row_range=slice(start, stop)))
+            chunk = self.elevation(row_range=slice(start, stop))
+            _min = nanmin(chunk)
+            # print("raw min:", nanmin(chunk))
+            # print("raw max:", nanmax(chunk))
             if isnan(elv_min):
                 elv_min = _min
             else:
                 if _min < elv_min:
                     elv_min = _min
-            _max = nanmax(self.elevation(row_range=slice(start, stop)))
+            _max = nanmax(chunk)
             if isnan(elv_max):
                 elv_max = _max
             else:
@@ -211,6 +214,18 @@ class BAGFile(File):
     def depth_min_max(self) -> tuple[float, float]:
         elv_min, elv_max = self.elevation_min_max()
         return -elv_max, -elv_min
+
+    def has_attr_elevation_max_value(self) -> bool:
+        return self.paths.bag_elevation_max_value_tag in self[self.paths.bag_elevation].attrs
+
+    def attr_elevation_max_value(self) -> float:
+        return self[self.paths.bag_elevation].attrs[self.paths.bag_elevation_max_value_tag]
+
+    def has_attr_elevation_min_value(self) -> bool:
+        return self.paths.bag_elevation_min_value_tag in self[self.paths.bag_elevation].attrs
+
+    def attr_elevation_min_value(self) -> float:
+        return self[self.paths.bag_elevation].attrs[self.paths.bag_elevation_min_value_tag]
 
     def vr_refinements_shape(self) -> tuple[int, int]:
         return self[self.paths.bag_varres_refinements].shape
@@ -266,11 +281,11 @@ class BAGFile(File):
         rows, cols = self.uncertainty_shape()
         # logger.debug('shape: %s, %s' % (rows, cols))
 
-        mem_row = cols * 32 / 1024 / 1024
+        mem_row = cols * 4 / 1024 / 1024
         # mem = mem_row * rows
         # logger.debug('estimated memory: %.1f MB' % mem)
         chunk_size = 8096
-        chunk_rows = int(chunk_size / mem_row) + 1
+        chunk_rows = max(1, int(chunk_size // mem_row))
         # logger.debug('nr of rows per chunk: %s' % chunk_rows)
 
         unc_min = nan
@@ -279,14 +294,15 @@ class BAGFile(File):
             stop = start + chunk_rows
             if stop > rows:
                 stop = rows
+            chunk = self.uncertainty(row_range=slice(start, stop))
             # logger.debug('slice: %s-%s' % (start, stop))
-            _min = nanmin(self.uncertainty(row_range=slice(start, stop)))
+            _min = nanmin(chunk)
             if isnan(unc_min):
                 unc_min = _min
             else:
                 if _min < unc_min:
                     unc_min = _min
-            _max = nanmax(self.uncertainty(row_range=slice(start, stop)))
+            _max = nanmax(chunk)
             if isnan(unc_max):
                 unc_max = _max
             else:
@@ -294,6 +310,18 @@ class BAGFile(File):
                     unc_max = _max
 
         return unc_min, unc_max
+
+    def has_attr_uncertainty_max_value(self) -> bool:
+        return self.paths.bag_uncertainty_max_value_tag in self[self.paths.bag_uncertainty].attrs
+
+    def attr_uncertainty_max_value(self) -> float:
+        return self[self.paths.bag_uncertainty].attrs[self.paths.bag_uncertainty_max_value_tag]
+
+    def has_attr_uncertainty_min_value(self) -> bool:
+        return self.paths.bag_uncertainty_min_value_tag in self[self.paths.bag_uncertainty].attrs
+
+    def attr_uncertainty_min_value(self) -> float:
+        return self[self.paths.bag_uncertainty].attrs[self.paths.bag_uncertainty_min_value_tag]
 
     def uncertainty_greater_than(self, th: float) -> list[list[int | float]]:
         rows, cols = self.uncertainty_shape()
@@ -902,7 +930,7 @@ class BAGFile(File):
             # log.debug("metadata already populated")
             return self.meta
 
-        self._meta = Meta(meta_xml=self.metadata(as_pretty_xml=True), has_vr=self.is_vr(bag_path=self.bag_path))
+        self._meta = Meta(meta_xml=self.metadata(as_pretty_xml=True))
         return self.meta
 
     def modify_wkt_prj(self, wkt_hor: str, wkt_ver: str | None = None) -> None:

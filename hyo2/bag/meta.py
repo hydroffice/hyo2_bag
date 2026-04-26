@@ -33,7 +33,7 @@ class Meta:
         'smXML': 'http://metadata.dgiwg.org/smXML',
     }
 
-    def __init__(self, meta_xml: bytes | str, has_vr: bool = False) -> None:
+    def __init__(self, meta_xml: bytes | str) -> None:
         GdalAux.push_gdal_error_handler()
 
         # noinspection PyUnresolvedReferences
@@ -94,11 +94,6 @@ class Meta:
         # security constraints
         self._sec_constr: str | None = None
         self._read_security_constraints()
-
-        self._has_vr: bool = has_vr
-
-        if self._has_vr:
-            pass
 
     @property
     def rows(self) -> int:
