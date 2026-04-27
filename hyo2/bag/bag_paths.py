@@ -43,8 +43,13 @@ class BAGPaths:
     bag_varres_meta_max_res_y_tag = "max_resolution_y"
     
     bag_varres_refinements = "BAG_root/varres_refinements"
+    bag_varres_refs_min_depth_tag = "min_depth"
+    bag_varres_refs_max_depth_tag = "max_depth"
+    bag_varres_refs_min_uncrt_tag = "min_uncrt"
+    bag_varres_refs_max_uncrt_tag = "max_uncrt"
     
     bag_varres_tracking_list = "BAG_root/varres_tracking_list"
+    bag_varres_tracking_list_len_tag = "VR Tracking List Length"
     
     @property
     def bag_root_version(self) -> str:

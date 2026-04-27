@@ -143,6 +143,9 @@ class Meta:
             raise RuntimeError("Unpopulated _xml_srs")
         return self._xml_srs
 
+    def has_wkt_srs_epsg_code(self) -> bool:
+        return self._wkt_srs_epsg_code is not None
+
     @property
     def wkt_srs_epsg_code(self) -> int:
         if self._wkt_srs_epsg_code is None:
@@ -160,6 +163,9 @@ class Meta:
         if self._xml_vertical_datum is None:
             raise RuntimeError("Unpopulated _xml_vertical_datum")
         return self._xml_vertical_datum
+
+    def has_wkt_vertical_datum_epsg_code(self) -> bool:
+        return self._wkt_vertical_datum_epsg_code is not None
 
     @property
     def wkt_vertical_datum_epsg_code(self) -> int:

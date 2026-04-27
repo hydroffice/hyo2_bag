@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 
 
 class BAGError(Exception):
-    """ BAG class for exceptions"""
+    """BAG class for exceptions"""
 
     def __init__(self, message, *args):
         if isinstance(message, Exception):

@@ -27,6 +27,8 @@ class BAGFile(File):
     paths = BAGPaths()
 
     BAG_NAN = 1000000
+    VR_META_DIM_NODATA = 0
+    VR_META_RES_NODATA = -1
 
     default_metadata_file = "BAG_metadata.xml"
 
@@ -762,6 +764,12 @@ class BAGFile(File):
 
         return True
 
+    def has_attr_tracking_list_length(self) -> bool:
+        return self.paths.bag_tracking_list_len_tag in self[self.paths.bag_tracking_list].attrs
+
+    def attr_tracking_list_length(self) -> int:
+        return self[self.paths.bag_tracking_list].attrs[self.paths.bag_tracking_list_len_tag]
+
     def metadata(self, as_string: bool = True, as_pretty_xml: bool = True) -> bytes | str:
         """ Return the metadata
 
@@ -1031,14 +1039,122 @@ class BAGFile(File):
         for i, x in enumerate(new_xml):
             ds[i] = bytes([x])
 
+    def varres_metadata(self) -> NDArray:
+        return self[self.paths.bag_varres_metadata][:]
+
     def has_varres_metadata(self) -> bool:
         return self.paths.bag_varres_metadata in self
+
+    def varres_metadata_dim_x(self) -> NDArray:
+        return self.varres_metadata()['dimensions_x']
+
+    def varres_metadata_dim_y(self) -> NDArray:
+        return self.varres_metadata()['dimensions_y']
+
+    def varres_metadata_res_x(self) -> NDArray:
+        return self.varres_metadata()['resolution_x']
+
+    def varres_metadata_res_y(self) -> NDArray:
+        return self.varres_metadata()['resolution_y']
+
+    def varres_metadata_sw_x(self) -> NDArray:
+        return self.varres_metadata()['sw_corner_x']
+
+    def varres_metadata_sw_y(self) -> NDArray:
+        return self.varres_metadata()['sw_corner_y']
+
+    def has_attr_varres_metadata_max_dim_x(self) -> bool:
+        return self.paths.bag_varres_meta_max_dim_x_tag in self[self.paths.bag_varres_metadata].attrs
+
+    def attr_varres_metadata_max_dim_x(self) -> int:
+        return self[self.paths.bag_varres_metadata].attrs[self.paths.bag_varres_meta_max_dim_x_tag]
+
+    def has_attr_varres_metadata_min_dim_x(self) -> bool:
+        return self.paths.bag_varres_meta_min_dim_x_tag in self[self.paths.bag_varres_metadata].attrs
+
+    def attr_varres_metadata_min_dim_x(self) -> int:
+        return self[self.paths.bag_varres_metadata].attrs[self.paths.bag_varres_meta_min_dim_x_tag]
+
+    def has_attr_varres_metadata_max_dim_y(self) -> bool:
+        return self.paths.bag_varres_meta_max_dim_y_tag in self[self.paths.bag_varres_metadata].attrs
+
+    def attr_varres_metadata_max_dim_y(self) -> int:
+        return self[self.paths.bag_varres_metadata].attrs[self.paths.bag_varres_meta_max_dim_y_tag]
+
+    def has_attr_varres_metadata_min_dim_y(self) -> bool:
+        return self.paths.bag_varres_meta_min_dim_y_tag in self[self.paths.bag_varres_metadata].attrs
+
+    def attr_varres_metadata_min_dim_y(self) -> int:
+        return self[self.paths.bag_varres_metadata].attrs[self.paths.bag_varres_meta_min_dim_y_tag]
+
+    def has_attr_varres_metadata_max_res_x(self) -> bool:
+        return self.paths.bag_varres_meta_max_res_x_tag in self[self.paths.bag_varres_metadata].attrs
+
+    def attr_varres_metadata_max_res_x(self) -> int:
+        return self[self.paths.bag_varres_metadata].attrs[self.paths.bag_varres_meta_max_res_x_tag]
+
+    def has_attr_varres_metadata_min_res_x(self) -> bool:
+        return self.paths.bag_varres_meta_min_res_x_tag in self[self.paths.bag_varres_metadata].attrs
+
+    def attr_varres_metadata_min_res_x(self) -> int:
+        return self[self.paths.bag_varres_metadata].attrs[self.paths.bag_varres_meta_min_res_x_tag]
+
+    def has_attr_varres_metadata_max_res_y(self) -> bool:
+        return self.paths.bag_varres_meta_max_res_y_tag in self[self.paths.bag_varres_metadata].attrs
+
+    def attr_varres_metadata_max_res_y(self) -> int:
+        return self[self.paths.bag_varres_metadata].attrs[self.paths.bag_varres_meta_max_res_y_tag]
+
+    def has_attr_varres_metadata_min_res_y(self) -> bool:
+        return self.paths.bag_varres_meta_min_res_y_tag in self[self.paths.bag_varres_metadata].attrs
+
+    def attr_varres_metadata_min_res_y(self) -> int:
+        return self[self.paths.bag_varres_metadata].attrs[self.paths.bag_varres_meta_min_res_y_tag]
 
     def has_varres_refinements(self) -> bool:
         return self.paths.bag_varres_refinements in self
 
+    def varres_refinements(self) -> NDArray:
+        return self[self.paths.bag_varres_refinements][:]
+
+    def varres_refinements_depth(self) -> NDArray:
+        return self.varres_refinements()['depth']
+
+    def varres_refinements_uncrt(self) -> NDArray:
+        return self.varres_refinements()['depth_uncrt']
+
+    def has_attr_varres_refinements_max_depth(self) -> bool:
+        return self.paths.bag_varres_refs_max_depth_tag in self[self.paths.bag_varres_refinements].attrs
+
+    def attr_varres_refinements_max_depth(self) -> int:
+        return self[self.paths.bag_varres_refinements].attrs[self.paths.bag_varres_refs_max_depth_tag]
+
+    def has_attr_varres_refinements_min_depth(self) -> bool:
+        return self.paths.bag_varres_refs_min_depth_tag in self[self.paths.bag_varres_refinements].attrs
+
+    def attr_varres_refinements_min_depth(self) -> int:
+        return self[self.paths.bag_varres_refinements].attrs[self.paths.bag_varres_refs_min_depth_tag]
+
+    def has_attr_varres_refinements_max_uncrt(self) -> bool:
+        return self.paths.bag_varres_refs_max_uncrt_tag in self[self.paths.bag_varres_refinements].attrs
+
+    def attr_varres_refinements_max_uncrt(self) -> int:
+        return self[self.paths.bag_varres_refinements].attrs[self.paths.bag_varres_refs_max_uncrt_tag]
+
+    def has_attr_varres_refinements_min_uncrt(self) -> bool:
+        return self.paths.bag_varres_refs_min_uncrt_tag in self[self.paths.bag_varres_refinements].attrs
+
+    def attr_varres_refinements_min_uncrt(self) -> int:
+        return self[self.paths.bag_varres_refinements].attrs[self.paths.bag_varres_refs_min_uncrt_tag]
+
     def has_varres_tracking_list(self) -> bool:
         return self.paths.bag_varres_tracking_list in self
+
+    def varres_tracking_list(self) -> NDArray:
+        return self[self.paths.bag_varres_tracking_list][:]
+
+    def attr_varres_tracking_list_length(self) -> int:
+        return self[self.paths.bag_varres_tracking_list].attrs[self.paths.bag_varres_tracking_list_len_tag]
 
     def _str_group_info(self, grp: str) -> None:
         if grp == self.paths.bag_root:
