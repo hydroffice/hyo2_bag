@@ -1,10 +1,13 @@
-import os
-import logging
 import argparse
+import logging
+import os
 
+# noinspection PyUnresolvedReferences
 from hyo2.abc2.lib.logging import set_logging
+# noinspection PyUnresolvedReferences
 from hyo2.bag import __version__
-from hyo2.bag.bag import BAGFile, is_bag
+# noinspection PyUnresolvedReferences
+from hyo2.bag.bag import BAGFile
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +29,7 @@ def main():
     if args.verbose:
         set_logging(ns_list=['hyo2.bag'])
         logger.debug("> verbosity: ON")
-        
+
         logger.debug("> input: %s" % args.bag_file)
 
         if args.output:
@@ -41,7 +44,7 @@ def main():
     if not os.path.exists(args.bag_file):
         parser.exit(1, "ERROR: the input valid does not exist: %s" % args.bag_file)
 
-    if not is_bag(args.bag_file):
+    if not BAGFile.is_bag(args.bag_file):
         parser.exit(1, "ERROR: the input valid does not seem a BAG file: %s" % args.bag_file)
 
     bf = BAGFile(args.bag_file, mode='r')
@@ -52,6 +55,7 @@ def main():
         parser.exit(1, "ERROR: issue in metadata population: %s" % e)
 
     try:
+        # noinspection PyUnresolvedReferences
         from hyo2.bag.bbox import Bbox2Gdal
         Bbox2Gdal(bag_meta, fmt=args.format, title=os.path.basename(args.bag_file), out_file=args.output)
     except Exception as e:

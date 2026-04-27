@@ -1,23 +1,21 @@
-import os
 import logging
+import os
 
 import numpy as np
 from osgeo import gdal, osr
 
 # noinspection PyUnresolvedReferences
-from hyo2.bag.meta import Meta
-# noinspection PyUnresolvedReferences
-from hyo2.bag.helper import BAGError
-# noinspection PyUnresolvedReferences
 from hyo2.bag.bag import BAGFile
-
+# noinspection PyUnresolvedReferences
+from hyo2.bag.bag_error import BAGError
+# noinspection PyUnresolvedReferences
+from hyo2.bag.meta import Meta
 
 logger = logging.getLogger(__name__)
 gdal.UseExceptions()
 
 
 class Uncertainty2Gdal:
-
     formats = {
         'ascii': ["AAIGrid", "bag.uncertainty.asc"],
         'geotiff': ["GTiff", "bag.uncertainty.tif"],

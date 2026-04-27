@@ -8,11 +8,13 @@ from numpy.typing import NDArray
 from osgeo import osr
 
 # noinspection PyUnresolvedReferences
+from hyo2.bag.bag_error import BAGError
+# noinspection PyUnresolvedReferences
 from hyo2.bag.bag_paths import BAGPaths
 # noinspection PyUnresolvedReferences
 from hyo2.bag.base import File
 # noinspection PyUnresolvedReferences
-from hyo2.bag.helper import BAGError, Helper
+from hyo2.bag.helper import Helper
 # noinspection PyUnresolvedReferences
 from hyo2.bag.meta import Meta
 

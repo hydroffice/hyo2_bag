@@ -1,10 +1,13 @@
-import os
-import logging
 import argparse
+import logging
+import os
 
+# noinspection PyUnresolvedReferences
 from hyo2.abc2.lib.logging import set_logging
+# noinspection PyUnresolvedReferences
 from hyo2.bag import __version__
-from hyo2.bag.bag import BAGFile, is_bag
+# noinspection PyUnresolvedReferences
+from hyo2.bag.bag import BAGFile
 
 logger = logging.getLogger(__name__)
 

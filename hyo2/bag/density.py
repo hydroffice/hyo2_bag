@@ -7,7 +7,7 @@ from osgeo import gdal, osr
 # noinspection PyUnresolvedReferences
 from hyo2.bag.bag import BAGFile
 # noinspection PyUnresolvedReferences
-from hyo2.bag.helper import BAGError
+from hyo2.bag.bag_error import BAGError
 # noinspection PyUnresolvedReferences
 from hyo2.bag.meta import Meta
 

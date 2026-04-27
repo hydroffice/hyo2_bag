@@ -1,10 +1,13 @@
-import os
-import logging
 import argparse
+import logging
+import os
 
+# noinspection PyUnresolvedReferences
 from hyo2.abc2.lib.logging import set_logging
+# noinspection PyUnresolvedReferences
 from hyo2.bag import __version__
-from hyo2.bag.bag import BAGFile, is_bag
+# noinspection PyUnresolvedReferences
+from hyo2.bag.bag import BAGFile
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,7 @@ def main():
     if not os.path.exists(args.bag_file):
         parser.exit(1, "ERROR: the input valid does not exist: %s" % args.bag_file)
 
-    if not is_bag(args.bag_file):
+    if not BAGFile.is_bag(args.bag_file):
         parser.exit(1, "ERROR: the input valid does not seem a BAG file: %s" % args.bag_file)
 
     bf = BAGFile(args.bag_file, mode='r')

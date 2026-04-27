@@ -1,15 +1,15 @@
-import os
 import logging
+import os
+
 import numpy as np
+
 # noinspection PyUnresolvedReferences
 from hyo2.bag import __version__
-
 
 logger = logging.getLogger(__name__)
 
 
 class TrackList2Csv:
-
     default_csv_name = "BAG.tracklist.csv"
 
     def __init__(self, track_list: np.ndarray, csv_file=None, header=None, comment=None):
