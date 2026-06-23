@@ -10,7 +10,7 @@ set_logging(ns_list=['hyo2.bag'])
 logger = logging.getLogger(__name__)
 
 # file_bag_0 = os.path.join(Helper.samples_folder(), "bdb_01.bag")
-file_bag_0 = r"C:\Users\gmasetti\Desktop\H13405S_MB_8m_MLLW_1of2_edited.bag"
+file_bag_0 = r"G:\My Drive\_ccom\QC Tools\data\_issues\20260623_VALSOU_Check\H14219_MB_1m_MLLW_1of4.bag"
 if os.path.exists(file_bag_0):
     logger.debug("- file_bag_0: %s" % file_bag_0)
 

@@ -805,13 +805,14 @@ class BAGFile(File):
             logger.info("unable to access the metadata")
             return
 
-        meta_xml: bytes
-
         if name is None:
             name = os.path.join(self.default_metadata_file)
 
         with open(os.path.abspath(name), 'w') as fid:
-            fid.write(meta_xml.decode())
+            if isinstance(meta_xml, bytes):
+                fid.write(meta_xml.decode())
+            else:
+                fid.write(meta_xml)
 
     def substitute_metadata(self, path: str) -> None:
         """ Substitute internal metadata
@@ -1166,7 +1167,7 @@ class BAGFile(File):
         elif grp == self.paths.bag_tracking_list:
             self._str += "  <tracking list shape=%s>\n" % str(self.tracking_list().shape)
         elif grp == self.paths.bag_metadata:
-            if self.meta is not None:
+            if self._meta is not None:
                 self._str += "  %s\n" % str(self.meta)
             else:
                 self._str += "  <%s>\n" % grp
