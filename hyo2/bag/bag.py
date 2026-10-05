@@ -328,8 +328,13 @@ class BAGFile(File):
         return self[self.paths.bag_uncertainty].attrs[self.paths.bag_uncertainty_min_value_tag]
 
     def uncertainty_greater_than(self, th: float) -> list[list[int | float]]:
+        return self._uncertainty_threshold(th=th, greater_than=True)
+
+    def uncertainty_lesser_than(self, th: float) -> list[list[int | float]]:
+        return self._uncertainty_threshold(th=th, greater_than=False)
+
+    def _uncertainty_threshold(self, th: float, greater_than: bool) -> list[list[int | float]]:
         rows, cols = self.uncertainty_shape()
-        # logger.debug('shape: %s, %s' % (rows, cols))
 
         self.populate_metadata()
 
@@ -337,41 +342,45 @@ class BAGFile(File):
         y_min = self.meta.sw[1]
         x_res = self.meta.res_x
         y_res = self.meta.res_y
-        # logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
         if in_srs.IsCompound():
             in_srs.StripVertical()
+
         out_srs = osr.SpatialReference()
         out_srs.ImportFromEPSG(4326)
         out_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+
         ctr = osr.CoordinateTransformation(in_srs, out_srs)
 
         mem_row = cols * 32 / 1024 / 1024
-        # mem = mem_row * rows
-        # logger.debug('estimated memory: %.1f MB' % mem)
         chunk_size = 8096
         chunk_rows = int(chunk_size / mem_row) + 1
-        # logger.debug('nr of rows per chunk: %s' % chunk_rows)
 
         xyz = list()
+
         for start in range(0, rows, chunk_rows):
-            stop = start + chunk_rows
-            if stop > rows:
-                stop = rows
+            stop = min(start + chunk_rows, rows)
 
             unc = self.uncertainty(row_range=slice(start, stop))
-            ijs = argwhere(unc > th)
+
+            if greater_than:
+                ijs = argwhere(unc > th)
+            else:
+                ijs = argwhere(unc < th)
+
             for ij in ijs:
                 i = ij[0]
                 j = ij[1]
+
                 e = x_min + j * x_res
                 n = y_min + (start + i) * y_res
+
                 lat, lon, _ = ctr.TransformPoint(e, n)
                 u = float(unc[i, j])
+
                 xyz.append([float(lat), float(lon), u])
-                # logger.info("%d,%d: %.7f %.7f %.3f" % ((start + i), j, xyz[-1][0], xyz[-1][1], xyz[-1][2]))
 
         return xyz
 

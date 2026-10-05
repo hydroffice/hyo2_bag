@@ -4,7 +4,7 @@ BAG
 """
 
 name = 'BAG'
-__version__ = '1.3.1'
+__version__ = '1.3.2'
 __author__ = 'gmasetti@ccom.unh.edu'
 __license__ = 'LGPLv3 license'
 __copyright__ = 'Copyright (c) 2026, University of New Hampshire, Center for Coastal and Ocean Mapping'
