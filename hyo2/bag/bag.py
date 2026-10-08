@@ -333,7 +333,10 @@ class BAGFile(File):
     def uncertainty_lesser_than(self, th: float) -> list[list[int | float]]:
         return self._uncertainty_threshold(th=th, greater_than=False)
 
-    def _uncertainty_threshold(self, th: float, greater_than: bool) -> list[list[int | float]]:
+    def uncertainty_lesser_but_greater_than(self, th: float, th2: float) -> list[list[int | float]]:
+        return self._uncertainty_threshold(th=th, th2=th2, greater_than=False)
+
+    def _uncertainty_threshold(self, th: float, th2: float | None, greater_than: bool) -> list[list[int | float]]:
         rows, cols = self.uncertainty_shape()
 
         self.populate_metadata()
@@ -366,9 +369,15 @@ class BAGFile(File):
             unc = self.uncertainty(row_range=slice(start, stop))
 
             if greater_than:
-                ijs = argwhere(unc > th)
+                if th2 is None:
+                    ijs = argwhere(unc > th)
+                else:
+                    ijs = argwhere((unc > th) & (unc <= th2))
             else:
-                ijs = argwhere(unc < th)
+                if th2 is None:
+                    ijs = argwhere(unc < th)
+                else:
+                    ijs = argwhere((unc < th) & (unc >= th2))
 
             for ij in ijs:
                 i = ij[0]
@@ -505,16 +514,21 @@ class BAGFile(File):
         return nanmin(vr_unc), nanmax(vr_unc)
 
     def vr_uncertainty_greater_than(self, th: float) -> list[list[int | float]]:
-        # rows, cols = self.vr_refinements_shape()
-        # logger.debug('shape: %s, %s' % (rows, cols))
+        return self._vr_uncertainty_threshold(th=th, greater_than=True)
 
+    def vr_uncertainty_lesser_than(self, th: float) -> list[list[int | float]]:
+        return self._vr_uncertainty_threshold(th=th, greater_than=False)
+
+    def vr_uncertainty_lesser_but_greater_than(self, th: float, th2: float) -> list[list[int | float]]:
+        return self._vr_uncertainty_threshold(th=th, th2=th2, greater_than=False)
+
+    def _vr_uncertainty_threshold(self, th: float, th2: float | None, greater_than: bool) -> list[list[int | float]]:
         self.populate_metadata()
 
         x_min = self.meta.sw[0]
         y_min = self.meta.sw[1]
         x_res = self.meta.res_x
         y_res = self.meta.res_y
-        # logger.debug("info: %f %f %f %f" % (x_min, y_min, x_res, y_res))
 
         in_srs = osr.SpatialReference()
         in_srs.ImportFromWkt(self.meta.wkt_srs)
@@ -531,10 +545,20 @@ class BAGFile(File):
 
         xyz_dict = dict()
         for idx, unc in enumerate(vr_unc):
-            if unc > th:
-                xyz_dict[idx] = unc
-
-        # logger.info("Located %d outliers" % len(xyz_dict))
+            if greater_than:
+                if th2 is None:
+                    if unc > th:
+                        xyz_dict[idx] = unc
+                else:
+                    if th2 >= unc > th:
+                        xyz_dict[idx] = unc
+            else:
+                if th2 is None:
+                    if unc < th:
+                        xyz_dict[idx] = unc
+                else:
+                    if th2 <= unc < th:
+                        xyz_dict[idx] = unc
 
         xyz = list()
         vr_ixs = self[self.paths.bag_varres_metadata][:]
@@ -550,11 +574,8 @@ class BAGFile(File):
                     if j not in xyz_dict:
                         continue
                     unc = float(xyz_dict[j])
-                    # logger.debug("Located outliers: %d %f in %d,%d: %s" % (j, unc, sg_r, sg_c, vr_ixs[sg_r, sg_c]))
-                    # vr_ixs[r, c]
                     rfn_r = ir_idx // vr_ixs[sg_r, sg_c][1]
                     rfn_c = ir_idx % vr_ixs[sg_r, sg_c][1]
-                    # logger.debug("%d > %d,%d" % (ir_idx, rfn_r, rfn_c))
                     e = x_min + (sg_c - 0.5) * x_res + vr_ixs[sg_r, sg_c][5] + rfn_c * vr_ixs[sg_r, sg_c][3]
                     n = y_min + (sg_r - 0.5) * y_res + vr_ixs[sg_r, sg_c][6] + rfn_r * vr_ixs[sg_r, sg_c][4]
                     lat, lon, _ = ctr.TransformPoint(e, n)
